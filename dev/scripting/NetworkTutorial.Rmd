@@ -1,0 +1,183 @@
+---
+title: "Network Tutorial"
+author: "Daphne Ezer"
+date: "2023-11-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load data
+
+There are various libraries that you will need to load (and possibly install).  Try running this code.  You may need to run the commented out code (by deleting the # symbol) if you do not have the packages installed yet.  You only need to install everything once.
+
+```{r}
+#install.packages('Matrix')
+library(Matrix)
+
+#if (!require("BiocManager", quietly = TRUE))
+#    install.packages("BiocManager")
+
+#BiocManager::install("GENIE3")
+library(GENIE3)
+
+source('../../dev/utilities/dataprocessingHelperFunctions.R')
+```
+
+
+There are various data sets that you will need to load:
+
+
+1. A sample single cell RNA-seq dataset (from flowers)
+```{r}
+#Load the single cell data for flowers.
+a=load('../../data/GSE226097_flower_230221.RData')
+
+```
+
+2. The AraBOXcis network
+```{r}
+#Load the original AraBOXcis network that was trained on bulk RNA-seq in seedlings 
+araboxcis=read.csv('../../data/gboxNetwork22C.csv', header=T)
+
+
+```
+
+## What is contained in this data set?
+
+What is contained in the 'GSE226097_flower_230221.RData file?  
+It is an RData file, which means that it contains variables that are readable in R.
+You can see what variables were saved by printing 'a'
+
+```{r}
+print(a)
+```
+
+It contains two variables: *gbox* and *clust*.  *gbox* is a Matrix and *clust* is a vector.  That means that *gbox* is a data table with rows and columns, while *clust* is a single column of data.  We can check the dimensions of a table/matrix with the function *dim* (in other words, the number of rows and number of columns in the table) and we can check the length of a vector with the function *length*.
+
+```{r}
+dim(gbox)
+length(clust)
+```
+
+The rownames of *gbox* are the names of the genes in Arabidopsis thaliana.  This dataset has already been filtered to only contain the genes that are in the G-box network.  This means that these genes either are G-box binding transcription factors or genes with perfect G-box sequence motifs in their promoters.  Let's print the first 10 rownames.
+
+```{r}
+rownames(gbox)[1:10]
+```
+
+The columns of *gbox* are the individual cells. They all have unique IDs.  Let's print out the first 10 column names:
+
+```{r}
+colnames(gbox)[1:10]
+```
+
+The values in the Matrix are the gene expression values.  There are lots of zeros because there is a lot of drop-out/zero inflation in single cell RNA-seq, as discussed in the last class.  Do you remember why there are so many 0s?  Let's look at the first 50 rows and the first 3 columns:
+
+```{r}
+as.matrix(gbox[1:50, 1:3])
+```
+
+The other variable *clust* contains the cluster designation of each cell.  You can see that the length of *clust* is the same as the number of columns of *gbox*.  That is because every cell has a cluster designation.  The clusters were identified using the Seurat package in the original paper.  In that paper, they also try to label each cluster with its cell type on the basis of the gene expression pattern of known cell type markers.  We can look at that mapping later when we try to interpret the network.  Let's print the cluster designations of the first 8 cells:
+
+```{r}
+clust[1:8]
+```
+
+We can use a function called *table* to count the number of cells in each cluster:
+
+```{r}
+table(clust)
+```
+
+This can be plotted as a graph using *plot*.  We can make sure that the bars are sorted by height using the *sort* function.
+
+```{r}
+plot(table(sort(clust)), xlab='cluster name', ylab='number of cells')
+```
+
+We also read in data from a file named gboxNetwork22C.  This also contains a matrix, so let's check its dimensions
+
+
+```{r}
+dim(araboxcis)
+```
+
+Let's take a peak at the first 4 rows:
+
+```{r}
+araboxcis[1:4,]
+```
+
+The first column contains the transcription factors.  The second column contains the target genes.  The third column contains the score of the regulatory edge.  This network is including all the edges that have scores bigger that 0, but usually you would select a threshold (often 0.05) for deciding if an edge should be part of the network or not. Let's make a histogram of the scores:
+
+```{r}
+hist(araboxcis[,3])
+```
+
+One thing that we'll need for the next analysis is a list of the transcription factors.  Let's get that now:
+
+```{r}
+tfs=unique(araboxcis[,1])
+```
+
+Let's filter this to only include transcription factors that are also in the single cell RNA-seq data set.  Some transcription factors are expressed so lowly that they aren't observed in scRNA-seq.
+
+```{r}
+tfSubs=tfs[which(tfs %in% rownames(gbox))]
+```
+
+How many transcription factors are there?  Let's use length to find out:
+
+```{r}
+length(tfSubs)
+```
+
+## First glimpse at Genie3:
+
+Let's try to infer our very first gene network!  However, network inference can be very slow, so let's do it on a subset of cells-- the smallest cluster (cluster 12).  
+
+```{r}
+subGbox=as.matrix(gbox[,which(clust==12)])
+```
+
+GENIE3 is the network inference algorithm that we will use. Its parameters include:
+
+1. a gene expression dataset (in our case, subGbox)
+2. a list of the regulators (tfSubs)
+3. various parameters related to how the random forest runs.  We're going to decrease the default number of trees in the random forest, just to speed up the code.
+
+```{r}
+
+net=GENIE3(subGbox, regulators = tfSubs, nTrees=100)
+
+```
+
+
+Now, let's convert this to a table like the one we had in the *araboxcis* variable.  
+
+Note that the function convertToAdjacency is one of the ones that I added to the 'dataprocessingHelperFunctions.R' file, which is loaded in the beginning of the script.
+
+```{r}
+ginieOutput=convertToAdjacency(net, 0.05)
+```
+
+Let's look at its dimensions and look at the first 10 edges in the network.
+
+```{r}
+dim(ginieOutput)
+ginieOutput[1:10,]
+```
+
+### Takeaways
+
+This workshop is supposed to show you the process that we will use to do the group project in 2024.  Hopefully, this shows you that coding doesn't have to be intimidating.  The big takeaways are:
+
+1. Always think 'why am I writing this line of code'
+2. Always try to take a peak at the output of each line of code to see if it matches your expectations.
+3. It is okay (good even!) to go through the code step-by-step to solve a problem.
+4. We will each have our own scripts, but we can share (well annotated) code in the 'dataprocessingHelperFunctions.R' script
+
+Have a great winter break!
