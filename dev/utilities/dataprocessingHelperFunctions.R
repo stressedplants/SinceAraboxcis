@@ -54,3 +54,18 @@ convertToAdjacency <- function(network, threshold){
   
   col3
 }
+
+#' Title
+#'
+#' @param i 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+hello <-function(i){
+  
+  
+  
+  
+}

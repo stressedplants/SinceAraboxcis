@@ -1,0 +1,218 @@
+---
+title: "Homework Week 3"
+author: "Daphne Ezer"
+date: "2024-01-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Tasks to do before next class
+Instructions for how to do these tasks is on the VLE under Week 1
+
+1. Practice fetching the latest version of the project from Github
+2. Download your dataset from the Google Drive and put it in the data folder of your R Project
+3. Add more code to your personal script in the dev folder that includes information from this Tutorial.
+4. Push your script to the Github project (but do NOT add the data file!)
+5. Add necessary information to the Google slides.
+
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Yellow boxes highlight the information that you should add to you team's Google slide deck for next week.
+:::
+## Overview of this Assignment
+
+Last week we took a look at how the data was structured and did some preliminary visualisations.  This week, we're going to see if there are significant differences between gene expression values of G-box transcription factors and genes near G-boxes between clusters.
+
+If you're making a new script for this, you'll need the following:
+
+```{r}
+
+#install.packages('Matrix')
+library(Matrix)
+
+#if (!require("BiocManager", quietly = TRUE))
+#    install.packages("BiocManager")
+
+#alternative filename='dev/utilities/dataprocessingHelperFunctions.R'
+source('dev/utilities/dataprocessingHelperFunctions.R')
+
+```
+
+And you'll need to reload your data
+
+```{r}
+a=load('data/GSE226097_flower_230221.RData')
+araboxcis=read.csv('data/gboxNetwork22C.csv', header=T)
+```
+
+First, let's find out the average gene expression of each gene across each cluster:
+
+```{r}
+
+  #make clust not be factors
+  clustAsNumbers=as.numeric(paste(clust))
+
+geneExpByCluster = apply(gbox, 1, function(i){
+  sapply(0:(length(unique(clust))-1), function(j){
+    ids=which(clustAsNumbers==j)
+    mean(i[ids])
+  })
+})
+
+colnames(geneExpByCluster)=rownames(gbox)
+
+dim(geneExpByCluster)
+```
+
+## Let's draw this as a heatmap
+
+```{r}
+#install.packages('pheatmap')
+library('pheatmap')
+
+pheatmap(geneExpByCluster, scale='column')
+```
+
+Why are we scaling the columns?  One of the issues here is that we don't know what the clusters mean.  However, the authors did provide a table of what cell type they think each cluster comes from:
+
+```{r}
+clustLabs=read.table('data/clusterLabels.txt', header=T, sep='\t')
+```
+Let's see what they call their datasets (note: casing is different from filenames, annoyingly.  There isn't even consistency in _ vs using spaces!)
+
+```{r}
+unique(clustLabs[,'Organ'])
+```
+
+In our case, the Organ is 'Flower'
+
+```{r}
+organ='Flower'
+simpleNames=clustLabs[which(clustLabs[,'Organ']==organ), "Cell.type.suggested"]
+print(simpleNames)
+rownames(geneExpByCluster)=simpleNames
+```
+
+Now we can redo the heatmap
+
+```{r}
+pheatmap(geneExpByCluster, scale='column')
+```
+
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Add this figure to your Google Slide deck-- make sure that you add a title to the slide, so we know which dataset it came from.
+:::
+
+Next, let's split this heatmap by transcription factors and downstream genes
+
+```{r}
+tfs=unique(araboxcis[,1])
+tfSubs=tfs[which(tfs %in% rownames(gbox))]
+pheatmap(geneExpByCluster[,tfSubs], scale='column')
+```
+
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Add this figure to your Google Slide deck-- make sure that you add a title to the slide, so we know which dataset it came from.
+:::
+
+## What is the correlation between expression in TFs and potential downstream targets?
+
+Now let's find the correlation between every TF and every potential downstream target.  Why do we use Spearman?
+
+```{r}
+
+corMat=sapply(tfSubs, function(tf){
+  apply(geneExpByCluster, 2, function(gene){
+    cor(geneExpByCluster[,tf], gene, method='spearman')
+  })
+})
+
+dim(corMat)
+pheatmap(corMat)
+```
+
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Add this figure to your Google Slide deck-- make sure that you add a title to the slide, so we know which dataset it came from.
+:::
+
+However, this isn't the full story because we need to be careful of Simpson's paradox.  Simpson's paradox is the idea that two factors might appear to be positively correlated under one condition, but may actually be negatively correlated if you group the data in a different way.  For instance, it could be that women that eat more vegetables grow taller AND men that eat more vegetables grow taller, BUT if you don't group by gender then there might still be a negative correlation between eating vegetables and height.  In this hypothetical scenario, it may be because men tend to be taller than women and they tend to eat fewer vegetables.  Here is a visualisation of Simpson's paradox:
+
+```{r pressure, echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics("figures/SimpsonsParadox.png")
+```
+
+In our case, we've seen that there is a correlation between transcription factor expression and downstream target expression between cell types.  However, that doesn't mean that within the cell types, there is necessarily the same correlations.
+
+## Looking for cases of Simpsons Paradox.
+
+Let's find some examples of transcription factors that are highly correlated with downstream genes when looking across cell types.  
+
+```{r}
+hist(corMat)
+
+id=which(corMat>0.8 & corMat!=1, arr.ind = TRUE)
+
+dim(id)
+```
+
+Now for these, see if there is a significant difference in the gene expression of the downstream gene, based on whether or not the TF is present in the cell.
+
+```{r}
+dim(corMat)
+dim(id)
+tVal=apply(id, 1, function(i){
+  row=rownames(corMat)[i[1]]
+  col=colnames(corMat)[i[2]]
+  
+  inBoth=length(which(gbox[row,]>0 & gbox[col,]>0))
+  inNone=length(which(gbox[row,]==0 & gbox[col,]==0))
+  inFirst=length(which(gbox[row,]>0 & gbox[col,]==0))
+  inSecond=length(which(gbox[row,]==0 & gbox[col,]>0))
+  matTemp=matrix(c(inBoth, inFirst, inSecond, inNone), ncol=2)
+  c(inBoth, inFirst, inSecond, inNone, (inBoth*inNone)/(inFirst*inSecond))
+})
+plot(log(tVal[1,]/(tVal[1,]+tVal[3,])),log(tVal[2,]/(tVal[2,]+tVal[4,])))
+hist(log(tVal[5,]))
+```
+## Compare between data sets
+
+Let's assemble lists of genes that have positive correlations on a cell type level AND a single cell level.
+
+```{r}
+thresh=exp(1)
+idDoublePositive=which(tVal[5,]>thresh)
+doublePositive=id[idDoublePositive,]
+print(doublePositive[,2])
+print(colnames(corMat))
+doublePositive[,1]=rownames(corMat)[doublePositive[,1]]
+doublePositive[,2]=colnames(corMat)[as.numeric(doublePositive[,2])]
+doublePositive=cbind(doublePositive[,2], doublePositive[,1]) #so TF comes before target
+doublePositive=cbind(doublePositive, tVal[5,idDoublePositive])
+
+#save file
+write.table(doublePositive, file='Flower_doublePositives.txt', sep='\t')
+```
+
+Let's assemble a set of Simpson's index regulatory pairs. (Could these be negative regulators?)
+
+```{r}
+thresh=1
+idSimpson=which(tVal[5,]<thresh)
+Simpson=id[idSimpson,]
+print(Simpson[,2])
+print(colnames(corMat))
+Simpson[,1]=rownames(corMat)[Simpson[,1]]
+Simpson[,2]=colnames(corMat)[as.numeric(Simpson[,2])]
+Simpson=cbind(Simpson[,2], Simpson[,1]) #so TF comes before target
+Simpson=cbind(Simpson, tVal[idSimpson])
+
+#save file
+write.table(Simpson, file='Flower_SimpsonPairs.txt', sep='\t')
+
+sort(table(Simpson[,1]))
+sort(table(doublePositive[,1]))
+```
+
+Now, we need to assemble
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
