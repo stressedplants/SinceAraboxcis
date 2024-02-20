@@ -64,13 +64,29 @@ includeCells=which(numberGenesPerCell>(thresh*dim(gbox)[1]))
 gbox_filtered=gbox[,includeCells]
 
 dim(gbox_filtered)
+#high threshold value: only points that are very close to each other in the high-dimensional
+#space will be considered as neighbors. results in clusters more tightly packed,
+#as only very close points are connected, leading to denser representation. 
+
+#low threshold value: only points that are farther apart in the high-dimensional space
+#will be considered neighbors. results in clusters that are more spread out, as 
+#points that are relatively distant in the high-dimensional space are also connected
+#in the low dimensional embedding. 
+
+#optimal threshold value: depends on the specific data set and the goal of the visualisation.
+# often requires experimentation and tuning. too high results in overcrowded clusters and loss of structure.
+#too low may result in sparsw clusters and difficulty in interpreting the visualisation. 
+
 #get rid of genes that are expressed in less than 1% of the cells
 numberCellsPerGene=apply(gbox_filtered, 1, function(i){length(which(i>0))})
 includeGenes=which(numberCellsPerGene>(thresh*dim(gbox_filtered)[2]))
 gbox_filtered=gbox_filtered[includeGenes,]
 dim(gbox_filtered)
 
-First visualisation with UMAP
+#First visualisation with UMAP
+#umap refers to the mini distance equired for two points to be considered as neighbors
+#in the high-dimensional space before they are connected in the low-denmentioanl 
+#embedding space. 
 #install.packages('umap')
 library(umap)
 #visualise it using UMAP
@@ -79,9 +95,46 @@ gbox.umap <- umap(gbox_filtered)
 colours=rainbow(length(unique(clust)))
 plot(gbox.umap$layout[,1], gbox.umap$layout[,2], col=colours[clust[includeCells]], pch=20, main='UMAP Seedling_3d', xlab='UMAP Component 1', ylab='UMAP Component 2')
 
+#changing parameters 
+#n_neighbors: determines the number of neighboring points used in the construction
+#of the high-dimensional fuzzy topological structure. increasing the value can result 
+#in more global structures being persevered in the embedding.
+
+#min_dist:controls mini distance between points in the low-dimensional embedding.
+#smaller values cause compact clusters and larger values cause more separation between clusters. 
+
+#n_components:specifies the dimensionality of the embedding space. default is 2(2D).
+#can be increased to obtain higher-dimensional embeddings if needed.
+
+#spread:controls the spread of the low-dimensional embedding. larger valves cause more spread out embedding.
+#smaller values result in more clustered embeddings. 
+
 #PCA UMAP 
 pca=prcomp(gbox_filtered, scale.=T, rank.=5)
 gbox.pca.umap <- umap(pca$x)
 
 colours=rainbow(length(unique(clust)))
 plot(gbox.pca.umap$layout[,1], gbox.pca.umap$layout[,2], col=colours[clust[includeCells]], pch=20, main='PCA UMAP Seedling_3d', xlab='UMAP Component 1', ylab='UMAP Component 2')
+
+#tSNE
+#had a go at doing t-SNE visulatiation, just change the code to fit your data 
+
+#install all the required packages 
+install.packages("Rtsne")
+install.packages("ggplot2")
+
+#load the required packages 
+library(Rtsne)
+library(ggplot2)
+
+#had to covert gbox_filterd into a matrix format using as.matrix()
+gbox_matrix <- as.matrix(gbox_filtered)
+
+#Use the Rtsne function to perform t-SNE on your data. Specify the appropriate 
+#parameters such as perplexity and dims (number of dimensions) based on your data:
+tsne_result <- Rtsne(gbox_matrix, dims = 2, perplexity = 45)
+
+#plot t-SNE
+plot(tsne_result$Y, col =colours[clust[includeCells]], pch = 20, main = "t-SNE Plot Seedling_3d")
+
+#may want to change colour scheme, (see example slides in TeamDaphne)
