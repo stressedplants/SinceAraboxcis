@@ -274,5 +274,5 @@ plot(gbox.pca.umap_10$layout[,1],
 dev.off()
 
 
-# Attempting Pseudotime -----------------------------------------
+# Attempting Pseudotime ---------------------------------------
 
