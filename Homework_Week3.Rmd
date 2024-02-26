@@ -8,23 +8,38 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-## Tasks to do before next class
+
 Instructions for how to do these tasks is on the VLE under Week 1
 
-1. Practice fetching the latest version of the project from Github
-2. Download your dataset from the Google Drive and put it in the data folder of your R Project
-3. Add more code to your personal script in the dev folder that includes information from this Tutorial.
-4. Push your script to the Github project (but do NOT add the data file!)
-5. Add necessary information to the Google slides.
+1. Fetch the latest version of the project from Github
+2. Double check that your data is in the data folder of your R Project
+3. Add a personal script in the dev folder or add to the one you wrote last week.  Make sure the name of the script identifies you and ends in '.R'.  As you go through this Homework, you can add code to this personal script.
+4. Before the next class, push your script to the Github project (but do NOT add the data file!)
+5. Add necessary information (as specified in this tutorial) to your group's Google slide.
 
 ::: {#hello .greeting .message style="background-color: lightyellow;"}
 Yellow boxes highlight the information that you should add to you team's Google slide deck for next week.
 :::
+
+::: {#hello .greeting .message style="background-color: lightblue;"}
+Blue boxes highlight additional activities that you could do that might enhance the class project.  Outputs of this could be made into functions for the class coding library.
+:::
+
+::: {#hello .greeting .message style="background-color: lightpink;"}
+Optional information to teach you about programming in R.
+:::
+
 ## Overview of this Assignment
 
-Last week we took a look at how the data was structured and did some preliminary visualisations.  This week, we're going to see if there are significant differences between gene expression values of G-box transcription factors and genes near G-boxes between clusters.
+Last week we took a look at how the data was structured and did some preliminary visualisations.  
 
-If you're making a new script for this, you'll need the following:
+This week, we are going to look at the average expression of these genes within the clusters.  We will address the following research questions:
+
+1. How does the average gene expression of these genes differ between different cell types?
+2. What is the correlation between the expression of G-box binding transcription factors (TFs) and genes that are found near perfect G-box motifs?
+3. How do the correlations calculated as part of question 2 vary if the data is grouped by cell type vs. considered at an individual cell level?
+
+If you're making a new script for this (your decision), you'll need the following:
 
 ```{r}
 
@@ -39,12 +54,14 @@ source('dev/utilities/dataprocessingHelperFunctions.R')
 
 ```
 
-And you'll need to reload your data
+And you'll need to reload your data.
 
 ```{r}
 a=load('data/GSE226097_flower_230221.RData')
 araboxcis=read.csv('data/gboxNetwork22C.csv', header=T)
 ```
+
+## Average expression of each gene in each cluster
 
 First, let's find out the average gene expression of each gene across each cluster:
 
@@ -64,8 +81,20 @@ colnames(geneExpByCluster)=rownames(gbox)
 
 dim(geneExpByCluster)
 ```
+::: {#hello .greeting .message style="background-color: lightpink;"}
 
-## Let's draw this as a heatmap
+There are several principles of R programming that are highlighted by this coding segment.
+
+- Factors: data in R can have different types, like numeric, text (called character or string), or boolean (TRUE/FALSE).  One other data type is a factor, which is a way to store categorical variables.  Examples of variables that are categorical include gender, course name, nationality, etc, because these can only take on one of a selection of options. It can be tricky to convert factors directly into numbers, because behind the scenes R treats factors like numbers already, which is why we do this in such a convoluted way here!
+
+- Sapply and apply are funny functions that we cover in the Week 2 lecture
+
+:::
+
+
+## Visualising large tables as heatmaps
+
+Now, let's visualise the outcome of the last analysis as a heatmap.
 
 ```{r}
 #install.packages('pheatmap')
@@ -74,21 +103,28 @@ library('pheatmap')
 pheatmap(geneExpByCluster, scale='column')
 ```
 
-Why are we scaling the columns?  One of the issues here is that we don't know what the clusters mean.  However, the authors did provide a table of what cell type they think each cluster comes from:
+Critical thinking questions: What do the rows and columns of the heatmap represent?  What do the colours mean?  Why are we scaling the columns? What is determining the order of rows and columns being depicted?
+
+Currently, one of the big problems in this figure is that the clusters are not labelled, so we have no way to know what they mean.  However, the authors did provide a table of what cell type they think each cluster comes from.  Let's read it in and use it to make our heatmap more interpretable.
 
 ```{r}
 clustLabs=read.table('data/clusterLabels.txt', header=T, sep='\t')
 ```
-Let's see what they call their datasets (note: casing is different from filenames, annoyingly.  There isn't even consistency in _ vs using spaces!)
+
+Clusters were independently determined for each developmental stage, so cluster 1 in Flowers have nothing to do with cluster 1 of Seedling day 3. 
+For that reason, we need to find the meaning of clusters in the appropriate scRNA-seq sample.  This information is stored in the Organ column of the clustLabs table.  However, this contains manually entered values from an Excel spreadsheet.  That means that you'll have to look carefully at the names they give to each 'Organ' and find the one that likely belongs to your scRNA-seq dataset.
+
+Let's print out all of the unique names they assign samples:
+ 
 
 ```{r}
 unique(clustLabs[,'Organ'])
 ```
 
-In our case, the Organ is 'Flower'
+In my case, the Organ is 'Flower'.
 
 ```{r}
-organ='Flower'
+organ='Flower' #### YOU WILL NEED TO CHANGE THIS!
 simpleNames=clustLabs[which(clustLabs[,'Organ']==organ), "Cell.type.suggested"]
 print(simpleNames)
 rownames(geneExpByCluster)=simpleNames
@@ -104,7 +140,27 @@ pheatmap(geneExpByCluster, scale='column')
 Add this figure to your Google Slide deck-- make sure that you add a title to the slide, so we know which dataset it came from.
 :::
 
-Next, let's split this heatmap by transcription factors and downstream genes
+Let's save the underlying table as a file, which can be shared between team members via the Google Drive Team folder.
+
+```{r}
+write.table(geneExpByCluster, 'data/Flower_avgExpressionByCluster.txt')
+```
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Add this file to your Teams Google Drive folder.
+:::
+
+Looking at this heatmap, do you notice whether similar cell types tend to cluster together?  Are there certain cell types that seem to have higher levels of expression of genes from the AraBOXcis network?  
+
+::: {#hello .greeting .message style="background-color: lightblue;"}
+Google the names of the different cell types to help you interpret this graph.
+
+Another task to do is to merge the tables from your teammates into one big table and make a joint data set.  
+:::
+
+## Focussing on transcription factors
+
+Now, let's do the same analysis, but focus on the transcription factors that bind to perfect G-boxes.  This will help us see whether these TFs tend to occur in certain cell types or whether they are more evenly distributed.
+
 
 ```{r}
 tfs=unique(araboxcis[,1])
@@ -116,12 +172,15 @@ pheatmap(geneExpByCluster[,tfSubs], scale='column')
 Add this figure to your Google Slide deck-- make sure that you add a title to the slide, so we know which dataset it came from.
 :::
 
+Are there any major differences between this heatmap and the heatmap that you produced previously?  For instance, in the Flower dataset, it appears as if there are fewer TFs that are specifically expressed in phloem than there are downstream genes that do.
+
 ## What is the correlation between expression in TFs and potential downstream targets?
 
-Now let's find the correlation between every TF and every potential downstream target.  Why do we use Spearman?
+We might hypothesize that if there is a correlation between TF expression and downstream gene expression, then it is possible that the TF regulates the downstream gene.  (What are some alternative explanations for this correlation?  Remember: correlation is not the same as causation!)
+
+Now let's find the correlation between every TF and every potential downstream target across the different cell types. 
 
 ```{r}
-
 corMat=sapply(tfSubs, function(tf){
   apply(geneExpByCluster, 2, function(gene){
     cor(geneExpByCluster[,tf], gene, method='spearman')
@@ -136,27 +195,43 @@ pheatmap(corMat)
 Add this figure to your Google Slide deck-- make sure that you add a title to the slide, so we know which dataset it came from.
 :::
 
-However, this isn't the full story because we need to be careful of Simpson's paradox.  Simpson's paradox is the idea that two factors might appear to be positively correlated under one condition, but may actually be negatively correlated if you group the data in a different way.  For instance, it could be that women that eat more vegetables grow taller AND men that eat more vegetables grow taller, BUT if you don't group by gender then there might still be a negative correlation between eating vegetables and height.  In this hypothetical scenario, it may be because men tend to be taller than women and they tend to eat fewer vegetables.  Here is a visualisation of Simpson's paradox:
+::: {#hello .greeting .message style="background-color: lightblue;"}
+Why do we use Spearman's correlation instead of Pearson's correlation?  You might want to repeat the analysis with pearson's correlation and see if it makes a difference.
+:::
 
-```{r pressure, echo=FALSE, fig.cap="A caption", out.width = '100%'}
+Do you see any groups transcription factors that have similar degrees of correlation with the same set of genes?  What does that mean?
+
+## Introducing Simpson's Paradox
+
+Simpson's paradox is the idea that two factors might appear to be positively correlated under one condition, but may actually be negatively correlated if you group the data in a different way (or vice versa).  
+
+Let's imagine a hypothetical scenario in which we are doing an investigation between quantity of vegetable consumption and height.  It is likely that women that eat more vegetables grow taller AND men that eat more vegetables grow taller.  However, if you don't group by gender and just analyse all the individual data points together, then there might actually be a negative correlation between eating vegetables and height.  In this hypothetical scenario, it may be because men tend to be taller than women and they tend to eat fewer vegetables.  Here is a visualisation of Simpson's paradox:
+
+```{r pressure, echo=FALSE, fig.cap="Data that is positively correlated when looking at individual data points may be negatively correlated when grouped by an external categorical variable (or the direction of correlations may be reversed).", out.width = '100%'}
 knitr::include_graphics("figures/SimpsonsParadox.png")
 ```
 
-In our case, we've seen that there is a correlation between transcription factor expression and downstream target expression between cell types.  However, that doesn't mean that within the cell types, there is necessarily the same correlations.
+In our case, we've seen that there is a correlation between transcription factor expression and downstream target expression when data is grouped by cell types.  However, that doesn't mean that this correlation would hold if we look at the correlation between TFs and downstream genes in individual cells.  Moreover, this doesn't mean that the TF and downstream gene will have the same direction of correlation when looking within each cell type.
 
-## Looking for cases of Simpsons Paradox.
+## Looking at correlation between TF expression and downstream gene expression in individual cells.
 
-Let's find some examples of transcription factors that are highly correlated with downstream genes when looking across cell types.  
+::: {#hello .greeting .message style="background-color: lightblue;"}
+In this analysis, we aren't precisely looking at the Simpson's Paradox because we're comparing between correlation across individuals vs. looking at correlations within groups.  Really, to identify cases of Simpson's paradox, we should be also calculating the correlations of individual cells *within groups*.  This is something that you could do in your spare time if you are interested.
+:::
+
+Let's find some examples of transcription factors that are highly correlated with downstream genes when looking at the cell type level.  We can see if these genes are also highly correlated with one another if we look at the individual cell level.
 
 ```{r}
-hist(corMat)
-
 id=which(corMat>0.8 & corMat!=1, arr.ind = TRUE)
-
 dim(id)
 ```
 
-Now for these, see if there is a significant difference in the gene expression of the downstream gene, based on whether or not the TF is present in the cell.
+The problem with calculating correlation at an individual cell level is that there is a huge amount of zero-inflation (i.e. the table has lots of zeros).  For this reason, neither Pearson's correlation nor Spearman's correlation are good choices.  Instead, we use the odds ratio of observing both the TF and the downstream gene within the same cell.
+
+The odds ratio is 1 if the number of times two factors occur simultaneously is expected.  It is greater than 1 if the two factors appear more 'positively' correlated with each other and it is less than 1 if the factors are 'negatively' correlated with each other.  The minimum value is >0 and there is no maximum.  
+
+In the following histogram, we plot the log-odds ratio.  If you take the log of 1, you get 0.  If you take the log of a value less than 1, you get a negative number.  If you take the log of a value greater than 1, you get a positive value.  The log-odds ratio is often easier to interpret. 
+
 
 ```{r}
 dim(corMat)
@@ -172,47 +247,114 @@ tVal=apply(id, 1, function(i){
   matTemp=matrix(c(inBoth, inFirst, inSecond, inNone), ncol=2)
   c(inBoth, inFirst, inSecond, inNone, (inBoth*inNone)/(inFirst*inSecond))
 })
-plot(log(tVal[1,]/(tVal[1,]+tVal[3,])),log(tVal[2,]/(tVal[2,]+tVal[4,])))
-hist(log(tVal[5,]))
+
+hist(log(tVal[5,]), main='Flower', xlab='log odds ratio')
 ```
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Put this figure in your Google Slide Deck. Remember to change the title.
+:::
+
+
+Remember that all of these TF-gene pairs had correlations between 0.8 and 1 when we looked cell type by cell type.  Given that, are you surprised by the distribution of odds ratios?  What does it mean when a gene has a strong positive correlation in terms of which cell type it is expressed in, but a negative correlation in terms of which individual cells it is expressed in?
+
 ## Compare between data sets
 
-Let's assemble lists of genes that have positive correlations on a cell type level AND a single cell level.
+Let's assemble lists of genes that have positive correlations on a cell type level AND a single cell level.  We can save it in a file for later analysis.
 
 ```{r}
 thresh=exp(1)
 idDoublePositive=which(tVal[5,]>thresh)
 doublePositive=id[idDoublePositive,]
-print(doublePositive[,2])
-print(colnames(corMat))
 doublePositive[,1]=rownames(corMat)[doublePositive[,1]]
 doublePositive[,2]=colnames(corMat)[as.numeric(doublePositive[,2])]
 doublePositive=cbind(doublePositive[,2], doublePositive[,1]) #so TF comes before target
 doublePositive=cbind(doublePositive, tVal[5,idDoublePositive])
 
 #save file
-write.table(doublePositive, file='Flower_doublePositives.txt', sep='\t')
+write.table(doublePositive, file='data/Flower_doublePositives.txt', sep='\t', row.names=F) ##CHANGE FILE NAME
 ```
 
-Let's assemble a set of Simpson's index regulatory pairs. (Could these be negative regulators?)
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Put this file in the shared drive.
+:::
+
+Let's assemble a set of regulatory pairs that were positive in the first analysis and negative in the second analysis. (Could these be negative regulators?)
 
 ```{r}
 thresh=1
 idSimpson=which(tVal[5,]<thresh)
 Simpson=id[idSimpson,]
-print(Simpson[,2])
-print(colnames(corMat))
+
 Simpson[,1]=rownames(corMat)[Simpson[,1]]
 Simpson[,2]=colnames(corMat)[as.numeric(Simpson[,2])]
 Simpson=cbind(Simpson[,2], Simpson[,1]) #so TF comes before target
 Simpson=cbind(Simpson, tVal[idSimpson])
 
 #save file
-write.table(Simpson, file='Flower_SimpsonPairs.txt', sep='\t')
+write.table(Simpson, file='data/Flower_SimpsonPairs.txt', sep='\t', row.names=F)  ##change file name here
 
-sort(table(Simpson[,1]))
-sort(table(doublePositive[,1]))
 ```
 
-Now, we need to assemble
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Put this file in the shared drive.
+:::
+
+## Making a network from scratch
+
+```{r}
+#BiocManager::install("GENIE3")
+library(GENIE3)
+
+```
+
+GENIE3 is the network inference algorithm that we will use. Its parameters include:
+
+1. a gene expression dataset (in our case, gbox)
+2. a list of the regulators (tfSubs)
+3. various parameters related to how the random forest runs.  We're going to decrease the default number of trees in the random forest, just to speed up the code.
+
+I would FIRST run this code with only 5 trees, to see if it works.  Then, I would use the Remote Virtual Desktop (info on the VLE) and run this line of code with 1000 trees.  You will likely need to keep your computer open overnight.  
+
+```{r}
+
+net=GENIE3(as.matrix(gbox), regulators = tfSubs, nTrees=5) #use more than 5 trees
+
+save(net, file='flower_network_nTree_5.RData')
+
+```
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Put this file (particularly the version with 1000 trees) in the shared drive.
+:::
+
+Now, let's convert this to a table like the one we had in the *araboxcis* variable.  
+
+Note that the function convertToAdjacency is one of the ones that I added to the 'dataprocessingHelperFunctions.R' file, which is loaded in the beginning of the script.
+
+```{r}
+ginieOutput=convertToAdjacency(net, 0.05)
+```
+
+Let's look at its dimensions and look at the first 10 edges in the network.
+
+```{r}
+dim(ginieOutput)
+ginieOutput[1:10,]
+```
+
+
+## Takeaways and additional information
+
+The aim of this homework assignment was to look at the correlations between TFs and their downstream genes.  Later on this term, we will use dynGenie3 to come up with a gene network, but in a way what we've done today is a naive way of assembling a gene network:  i.e. finding regulators that are correlated with potenatial downstream targets.  This creates a baseline that we can use later. 
+
+We also explored how you can get different results when you group data vs. looking at individual data points.  This is a really important thing to take forward in future bioinformatics research and is something that is often overlooked, leading to mis-leading results.
+
+::: {#hello .greeting .message style="background-color: lightblue;"}
+There are two extension activities that would massively enhance this week's work:
+
+- Delve deeper into the biology of the genes in the last two lists.  The two ways of doing that is by looking at the gene descriptions of some of the TFs on https://arabidopsis.org  (there is a searchbar at the top).  The other way is to take the list of downstream targets and do a GO enrichment analysis: https://biit.cs.ut.ee/gprofiler/gost  but remember to change the species to Arabidopsis!
+
+- It would be great if you could compare the tables that you produced in the last step of your analysis with the ones produced by your teammates. Can you make a Venn Diagram of how often each potential regulatory edge appears in each of your developmental stages?  What edges are consistently found in all your data sets?
+:::
+
+
+
