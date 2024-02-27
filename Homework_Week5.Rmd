@@ -1,0 +1,378 @@
+---
+title: "Homework Week 5"
+author: "Daphne Ezer"
+date: "2024-01-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Tasks to do before next class
+Instructions for how to do these tasks is on the VLE under Week1
+
+1. Practice fetching the latest version of the project from Github
+2. Download your dataset from the Google Drive and put it in the data folder of your R Project
+3. Add a personal script in the dev folder that includes information from this Tutorial.
+4. Push your script to the Github project (but do NOT add the data file!)
+5. Add necessary information to the Google slide.
+
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Yellow boxes highlight the information that you should add to you team's Google slide deck for next week.
+:::
+
+::: {#hello .greeting .message style="background-color: lightblue;"}
+Blue boxes highlight additional activities that you could do that might enhance the class project.  Outputs of this could be made into functions for the class coding library.
+:::
+
+## Aims for today
+
+- Is the old AraBOXcis predictive of single cell data?
+
+## Load old AraBOXcis
+If you're making a new script for this, you'll need the following:
+
+```{r}
+
+#install.packages('Matrix')
+library(Matrix)
+
+#if (!require("BiocManager", quietly = TRUE))
+#    install.packages("BiocManager")
+
+#alternative filename='dev/utilities/dataprocessingHelperFunctions.R'
+source('dev/utilities/dataprocessingHelperFunctions.R')
+
+```
+
+And you'll need to reload your data
+
+```{r}
+a=load('data/GSE226097_flower_230221.RData')
+araboxcis=read.csv('data/gboxNetwork22C.csv', header=T)
+```
+
+## Predict expressions, using random forest
+Load random forest library and set a seed so the results are reproducible.
+```{r}
+#install.packages('randomForest')
+library(randomForest)
+set.seed(1)
+```
+
+Now, let's start off with an example of one gene:
+
+```{r}
+#rownames(gbox)[1:10]
+#araboxcis[1:10,2]
+araboxcisFiltered=araboxcis[which(araboxcis[,2] %in% rownames(gbox)),]
+
+#let's be a little more strict and say that the downstream gene needs to be in at least thresh cells
+threshCells=40
+gboxCellCount=apply(gbox, 1, function(i){length(which(i>0))})
+gboxCellCountNames=names(gboxCellCount)[which(gboxCellCount>threshCells)]
+araboxcisFiltered=araboxcisFiltered[which(araboxcisFiltered[,2] %in% gboxCellCountNames),]
+
+dim(araboxcis)
+dim(araboxcisFiltered)
+araboxcisFiltered=araboxcisFiltered[1:20000,]
+gene=araboxcisFiltered[1,2]
+
+#get predictors for gene
+tfs=araboxcisFiltered[which(araboxcisFiltered[,2]==gene),1]
+tfs=tfs[which(tfs %in% rownames(gbox))]
+print(tfs)
+
+#Now subset the big gbox matrix
+subG=gbox[c(gene,tfs),]
+dim(subG)
+subG=subG[,which(colSums(subG)>1)] #at least two of these genes present
+subG=t(subG)
+dim(subG)
+dfSubGbox=data.frame(as.matrix(subG))
+colnames(dfSubGbox)[1]='Target'
+
+#set aside 40% of dataset as test set
+testSplit=0.4
+testIDs=sample(dim(subG)[1], testSplit*dim(subG)[1])
+testSet=dfSubGbox[testIDs,]
+trainSet=dfSubGbox[-testIDs,]
+
+model <- randomForest(
+  formula = Target ~ .,
+  data = trainSet
+)
+
+model
+
+model_tuned <- tuneRF(
+               x=trainSet[,-1], #define predictor variables
+               y=trainSet$Target, #define response variable
+               ntreeTry=500,
+               mtryStart=4, 
+               stepFactor=1.5,
+               improve=0.01,
+               trace=FALSE, #don't show real-time progress
+               doBest=TRUE
+               )
+
+plot(model_tuned)
+
+
+```
+
+Now look at predictions for test set
+
+```{r}
+out=predict(model_tuned, newdata=testSet)
+dfCombo=data.frame(cbind(testSet[,1],out))
+colnames(dfCombo)=c('actual', 'predict')
+
+library(ggplot2)
+ggplot(dfCombo,  aes( x=as.factor(actual), y=predict)) + geom_boxplot() + labs(x = 'Actual expression', y = 'Predicted expression')
+```
+
+
+Now, let's repeat this whole thing, with every gene. First, let's make a function that does everything above, but without making plots and just saving the best model.
+
+
+```{r}
+fineTuneModelPerGene <- function(gbox, araboxcisFiltered, gene){
+  #get predictors for gene
+  tfs=araboxcisFiltered[which(araboxcisFiltered[,2]==gene),1]
+  tfs=tfs[which(tfs %in% rownames(gbox))]
+
+  if(length(tfs)<2){
+    list('model'='too few TFs', 'prediction'=NA,   'actual'=testSet[,1], 'gene'=gene)
+  }else{
+  
+  #Now subset the big gbox matrix
+  subG=gbox[c(gene,tfs),]
+  subG=subG[,which(colSums(subG)>1)] #at least two of these genes present
+  subG=t(subG)
+  if(dim(subG)[1]<10){
+    list('model'='too few Cells', 'prediction'=NA,   'actual'=testSet[,1], 'gene'=gene)
+  }else{
+  
+  
+  dfSubGbox=data.frame(as.matrix(subG))
+  colnames(dfSubGbox)[1]='Target'
+
+  
+  #set aside 40% of dataset as test set
+  testSplit=0.4
+  testIDs=sample(dim(subG)[1], testSplit*dim(subG)[1])
+  testSet=dfSubGbox[testIDs,]
+  trainSet=dfSubGbox[-testIDs,]
+  
+  if(sum(trainSet$Target)==0){
+    list('model'='no target gene in training set', 'prediction'=rep(0, length(testSet[,1])),   'actual'=testSet[,1], 'gene'=gene)
+  }else{
+    
+  options(warn=-1)
+  model_tuned <- tuneRF(
+               x=trainSet[,-1], #define predictor variables
+               y=trainSet$Target, #define response variable
+               ntreeTry=500,
+               mtryStart=4, 
+               stepFactor=1.5,
+               improve=0.01,
+               plot=FALSE,
+               trace=FALSE, #don't show real-time progress
+               doBest=TRUE
+               )
+  options(warn=0)
+  out=predict(model_tuned, newdata=testSet)
+  list('model'=model_tuned, 'prediction'=out, 'actual'=testSet[,1], 'gene'=gene)
+  }}}
+}
+```
+
+Now, let's use it for each gene
+
+```{r,  results='hide'}
+length(unique(araboxcisFiltered[,2]))
+#out=lapply(unique(araboxcisFiltered[,2]), function(gene){
+#    try(fineTuneModelPerGene(gbox, araboxcisFiltered, gene))  
+#})
+```
+Now let's look at it.
+```{r}
+#genesNotWorked=sapply(out, function(i){length(names(i))!=4})
+
+#print('weird')
+#unique(araboxcisFiltered[,2])[which(genesNotWorked)]
+
+#length(out)
+#length(unique(araboxcisFiltered[,2]))
+
+
+#save(out, file='Flower_randomForestOutputs.RData')
+```
+
+Now, we need to have a sense as to whether we're enriching for real edges.
+
+Let's shuffle the edges in the network and try again.  If the edges mean something,
+it should give a worse result.
+
+```{r, results='hide'}
+araboxcisFiltered2=araboxcisFiltered
+
+for(tf in unique(araboxcisFiltered2[,1])){
+  
+  freqOptions=table(araboxcisFiltered2[,2])
+  probOptions=freqOptions/sum(freqOptions)
+  namesOptions=names(freqOptions)
+  numSample=length(which(araboxcisFiltered2[,1]==tf))
+  araboxcisFiltered2[which(araboxcisFiltered2[,1]==tf),2]=sample(namesOptions, numSample, prob=probOptions)
+}
+
+#out1=lapply(unique(araboxcisFiltered2[,2]), function(gene){
+#    try(fineTuneModelPerGene(gbox, araboxcisFiltered2, gene))  
+#})
+
+#save(out1, file='Flower_randomForestOutputs_randomised.RData')
+```
+
+```{r}
+#load('Flower_randomForestOutputs_randomised.RData')
+#genesNotWorked=sapply(out1, function(i){length(names(i))!=4})
+
+#print('weird')
+#unique(araboxcisFiltered2[,2])[which(genesNotWorked)]
+
+
+```
+
+
+
+
+It worked!  Now, let's load the data and see if the Ara-BOX-cis network is significantly better than chance
+```{r}
+a=load('Flower_randomForestOutputs_randomised.RData')
+b=load('Flower_randomForestOutputs.RData')
+print(a)
+print(b)
+ random=sapply(out1, function(i){
+   if(length(i$prediction)==length(i$actual) & sd(i$actual)>0){
+     cor(i$actual, i$prediction)
+   }else{0}#1}
+ })
+ oldNetwork=sapply(out, function(i){
+   if(length(i$prediction)==length(i$actual)  & sd(i$actual)>0){
+     cor(i$actual, i$prediction)
+   }else{0}#1}
+ })
+ 
+  hist(random)
+ 
+ hist(oldNetwork)
+ 
+ qqplot(random, oldNetwork)
+ abline(c(0,1))
+ #hist(log(random+1, base=2))
+ 
+ #hist(log(oldNetwork+1, base=2))
+# 
+ length(random)
+ length(oldNetwork)
+ #if(length(random)==length(oldNetwork)){
+   #qqplot(log(random+1, base=2), log(oldNetwork+1, base=2))
+ #}
+
+   #only ones that worked
+  # workedRand=random[which(random!=1)]
+  # workedOld=oldNetwork[which(oldNetwork!=1)]
+   
+ workedRand=random[which(random!=0)]
+   workedOld=oldNetwork[which(oldNetwork!=0)]
+  
+ 
+  # qqplot(log(workedRand+1, base=2), log(workedOld+1, base=2))
+    qqplot(workedRand, workedOld)
+    abline(c(0,1))
+   
+```
+
+
+First, let's explore the one weird gene, then the four missing ones
+```{r}
+## [1] "AT2G29070" "AT3G59780" "AT3G53880"
+# a=load('Flower_randomForestOutputs_randomised.RData')
+# print(a)
+ weird="AT3G53880"
+# 
+# id=sapply(out1, function(i){
+#  if(!is.list(i)){
+#    print('weird')
+#    TRUE
+#  }else{FALSE}
+# })
+# print(id)
+# 
+# out1$id
+ araboxcisFiltered2[which(araboxcisFiltered2[,2]==weird),]
+ table(gbox[c(weird),])
+# table(gbox[c('AT4G29930'),])
+# 
+# 
+ gene=weird
+#fineTuneModelPerGene(gbox, araboxcisFiltered, weird)
+#get predictors for gene
+   tfs=araboxcisFiltered2[which(araboxcisFiltered2[,2]==gene),1]
+   tfs=tfs[which(tfs %in% rownames(gbox))]
+  # 
+  # #Now subset the big gbox matrix
+   subG=gbox[c(gene,tfs),]
+   subG=subG[,which(colSums(subG)>1)] #at least two of these genes present
+   subG=t(subG)
+   dim(subG)
+  # dfSubGbox=data.frame(as.matrix(subG))
+  # colnames(dfSubGbox)[1]='Target'
+  # 
+  # #set aside 40% of dataset as test set
+  # testSplit=0.4
+  # testIDs=sample(dim(subG)[1], testSplit*dim(subG)[1])
+  # testSet=dfSubGbox[testIDs,]
+  # trainSet=dfSubGbox[-testIDs,]
+  # options(warn=-1)
+  # 
+  # table(trainSet$Target)
+  # length(trainSet[,-1])
+  # #apply(trainSet[,-1], 2, function(temp){table(temp)})
+  
+  #model_tuned <- tuneRF(
+  #             x=trainSet[,-1], #define predictor variables
+  #             y=trainSet$Target, #define response variable
+  #             ntreeTry=500,
+  #             mtryStart=4, 
+  #             stepFactor=1.5,
+  #             improve=0.01,
+  #             plot=FALSE,
+  #             trace=FALSE, #don't show real-time progress
+  #             doBest=TRUE
+  #             )
+  options(warn=0)
+  #out=predict(model_tuned, newdata=testSet)
+
+```
+
+## Find background predictive capacity by shuffling network
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
