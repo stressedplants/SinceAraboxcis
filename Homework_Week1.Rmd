@@ -1,0 +1,319 @@
+---
+title: "Homework Week 1"
+author: "Daphne Ezer"
+date: "2024-01-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Preliminary tasks
+
+Instructions for how to do these tasks is on the VLE under Week 1
+
+1. Fetch the latest version of the project from Github
+2. Download your data set from the Google Drive and put it in the data folder of your R Project
+3. Add a personal script in the dev folder.  Give it a name that identifies you and that ends in '.R'.  As you go through this Homework, you can add code to this personal script.
+4. Before the next class, push your script to the Github project (but do NOT add the data file!)
+5. Add necessary information (as specified in this tutorial) to your group's Google slide.
+
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Yellow boxes highlight the information that you should add to you team's Google slide deck for next week.
+:::
+
+::: {#hello .greeting .message style="background-color: lightblue;"}
+Blue boxes highlight additional activities that you could do that might enhance the class project.  Outputs of this could be made into functions for the class coding library.
+:::
+
+::: {#hello .greeting .message style="background-color: lightpink;"}
+Optional information to teach you about programming in R.
+:::
+
+## Load data
+
+There are various libraries that you will need to load (and possibly install).  Try running this code.  You may need to run the commented out code (by deleting the # symbol) if you do not have the packages installed yet.   
+
+
+NOTE: there have been some additional functions added to dataprocessingHelperFunctions.R.  If your code does not work, it is likely because you didn't fetch the latest version from Github.
+
+```{r}
+
+#install.packages('Matrix')
+library(Matrix)
+
+#if (!require("BiocManager", quietly = TRUE))
+#    install.packages("BiocManager")
+
+#alternative filename='dev/utilities/dataprocessingHelperFunctions.R'
+source('dev/utilities/dataprocessingHelperFunctions.R')
+```
+
+
+There are various data sets that you will need to load:
+
+
+1. Your single cell RNA-seq dataset.  Make sure your data is downloaded from the Google Drive and placed in the data folder.  Replace 'GSE226097_flower_230221.RData' with the actual name of your file.
+
+If you still can't load the data, then try to check what your working directory is.  You may need to make sure you open the SinceArabidopsis project.  Another issue could be that you put your file in the wrong place.
+```{r}
+#Load the single cell data for flowers.
+a=load('data/GSE226097_flower_230221.RData')  ########CHANGE THIS TO YOUR FILE!!!
+
+```
+
+2. The AraBOXcis network
+```{r}
+#Load the original AraBOXcis network that was trained on bulk RNA-seq in seedlings 
+araboxcis=read.csv('data/gboxNetwork22C.csv', header=T)
+
+```
+
+::: {#hello .greeting .message style="background-color: lightpink;"}
+R programming tips for this section: 
+
+- '#' is the symbol for adding comments. R will not run any text after this symbol, so you can use it to add descriptions of what your code is supposed to be doing.  This will help you later on, when you revisit your code and try to remember what analysis you performed and why.
+
+- To install a new R package that is stored in the CRAN library (the main library for R packages), you type *install.packages('nameOfPackage')*.
+
+- To load your installed package, you need to load the library: *library('nameOfPackage')*
+
+- The function *load('filename.RData')* loads R data objects.
+
+- The function *source('filename.R')* runs all the code in a different file.  
+
+- *read.csv('filename.csv')* reads in comma separated tables.  You need to set the parameter *header=TRUE* if you have column names
+:::
+
+## What is contained in this data set?
+
+What is contained in the single cell RNA-seq files?  
+It is an RData file, which means that it contains variables that are readable in R.
+You can see what variables were saved:
+
+```{r}
+print(a)
+```
+
+It contains two variables: *gbox* and *clust*.  *gbox* is a Matrix and *clust* is a vector.  That means that *gbox* is a data table with rows and columns, while *clust* is a single column of data.  We can check the dimensions of a table/matrix with the function *dim* (in other words, the number of rows and number of columns in the table) and we can check the length of a vector with the function *length*.
+
+```{r}
+dim(gbox)
+length(clust)
+```
+
+::: {#hello .greeting .message style="background-color: lightpink;"}
+A *vector* is like a single column of data and a *matrix* or *dataframe* is a table with rows and columns.  *dim* tells you the number of rows and columns of a matrix or dataframe and *length* tells you the number of elements of a vector.  
+:::
+
+The rownames of *gbox* are the names of the genes in *Arabidopsis thaliana*.  This dataset has already been filtered to only contain the genes that are in the G-box network.  This means that these genes either are G-box binding transcription factors or genes with perfect G-box sequence motifs in their promoters.  Let's print the first 10 rownames.
+
+```{r}
+rownames(gbox)[1:10]
+```
+
+::: {#hello .greeting .message style="background-color: lightpink;"}
+*rownames* gives you the row names of the table.  The output of rownames is a vector.  To access data in a vector, you can specify the id (number) or ids (vector) you want to access within square brackets (format: *vec[id]* or *vec[ids]*).
+:::
+
+The columns of *gbox* are the individual cells. They all have unique IDs.  Let's print out the first 10 column names:
+
+```{r}
+colnames(gbox)[1:10]
+```
+
+The values in the Matrix are the gene expression values.  There are lots of zeros because there is a lot of drop-out/zero inflation in single cell RNA-seq, as discussed last term.  Do you remember why there are so many 0s?  Let's look at the first 50 rows and the first 3 columns:
+
+```{r}
+as.matrix(gbox[1:50, 1:3])
+```
+::: {#hello .greeting .message style="background-color: lightpink;"}
+Two R points here
+
+- a *Matrix* is a special way of storing a table in R that is especially good at storing tables with lots of zeroes without wasting lots of the computer's memories.  as.matrix turns a Matrix (with a capital M) into a normal matrix, which is just a normal table in R.
+
+- To extract a sub-portion of a matrix or *Matrix*, you need to specify the rows and columns you want to access, separated by a comma.  format: *mat[rows, cols]*.  If you want to extract certain rows and ALL columns, you do *mat[rows, ]*.  If you want to extract certain columns and ALL rows, you do *mat[,cols]*.
+:::
+
+
+The other variable *clust* contains the cluster designation of each cell.  You can see that the length of *clust* is the same as the number of columns of *gbox*.  That is because every cell has a cluster designation.  The clusters were identified using the Seurat package in the original paper.  In that paper, they also try to label each cluster with its cell type on the basis of the gene expression pattern of known cell type markers.  We can look at that mapping later when we try to interpret the network.  Let's print the cluster designations of the first 8 cells:
+
+```{r}
+clust[1:8]
+```
+
+We can use a function called *table* to count the number of cells in each cluster:
+
+```{r}
+table(clust)
+```
+
+::: {#hello .greeting .message style="background-color: lightpink;"}
+The *table* function is really useful: it gives a frequency table (i.e. how many times does each value appear in a vector?)
+:::
+
+This can be plotted as a graph using *plot*.  We can make sure that the bars are sorted by height using the *sort* function.
+
+```{r}
+plot(table(sort(clust)), xlab='cluster name', ylab='number of cells', main='Flower')
+```
+
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Edit the title of the plot from 'main' to your actual data set name.  Then, put the figure on your Google Slide Deck. 
+:::
+
+We also read in data from a file named gboxNetwork22C.  This also contains a matrix, so let's check its dimensions
+
+
+```{r}
+dim(araboxcis)
+```
+
+Let's take a peak at the first 4 rows:
+
+```{r}
+araboxcis[1:4,]
+```
+
+The first column contains the transcription factors.  The second column contains the target genes.  The third column contains the score of the regulatory edge.  This network is including all the edges that have scores bigger that 0, but usually you would select a threshold (often 0.05) for deciding if an edge should be part of the network or not. Let's make a histogram of the scores:
+
+```{r}
+hist(araboxcis[,3])
+```
+
+One thing that we'll need for next week's analysis is a list of the transcription factors.  Let's get that now:
+
+```{r}
+tfs=unique(araboxcis[,1])
+```
+
+::: {#hello .greeting .message style="background-color: lightpink;"}
+The *unique* function is also useful: it creates a new vector with all duplicates removed.
+:::
+
+Let's filter this to only include transcription factors that are also in the single cell RNA-seq data set.  Some transcription factors are expressed so lowly that they aren't observed in scRNA-seq.
+
+```{r}
+tfSubs=tfs[which(tfs %in% rownames(gbox))]
+```
+
+::: {#hello .greeting .message style="background-color: lightpink;"}
+*'vec1 %in% vec2'* produces a vector of *length(vec1)*.  The vector contains TRUE wherever an element of *vec1* is in *vec2*, and FALSE otherwise.
+:::
+
+How many transcription factors are there?  Let's use length to find out:
+
+```{r}
+length(tfSubs)
+```
+
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Everyone in your team would add the number of unique TFs that they have in their datasets.  Type it in like this:  Dataset name: Number.  In this example, I would put 'Flower: 136'. 
+:::
+
+## Filter genes and cells with very low values
+Recall the dimensions of the gbox. How many rows and columns does it have?
+
+```{r}
+dim(gbox)
+```
+
+First, let's get rid of cells that have less than 1% of the genes expressed at all.
+Honestly, this is a little bit of a random choice, but we need to be consistent.
+
+```{r}
+thresh=0.01
+numberGenesPerCell=apply(gbox, 2, function(i){length(which(i>0))})
+includeCells=which(numberGenesPerCell>(thresh*dim(gbox)[1]))
+
+gbox_filtered=gbox[,includeCells]
+
+dim(gbox_filtered)
+```
+
+::: {#hello .greeting .message style="background-color: lightblue;"}
+Experiment with the threshold value: how does it change the UMAP visualisation?
+:::
+
+Now, let's get rid of genes that are expressed in less than 1% of the cells
+```{r}
+numberCellsPerGene=apply(gbox_filtered, 1, function(i){length(which(i>0))})
+includeGenes=which(numberCellsPerGene>(thresh*dim(gbox_filtered)[2]))
+gbox_filtered=gbox_filtered[includeGenes,]
+dim(gbox_filtered)
+```
+
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Note the dimensions of gbox_filtered after this step in the Google SlideDeck.  This will help us determine if we're being too harsh/lenient with our filtering criteria. 
+:::
+
+## First visualisation with UMAP
+
+Now, let us project this high-dimensional data into 2 dimensions using UMAP.
+
+First, we need to install the packages and load the library:
+
+```{r}
+#install.packages('umap')
+library(umap)
+```
+
+::: {#hello .greeting .message style="background-color: lightblue;"}
+You might want to try alternative visualisation approaches too, like t-SNE
+:::
+
+Now, let's run UMAP.  Note that UMAP is sloooow, so you may need to wait for 10 min or so.
+```{r}
+#Let us visualise it using UMAP
+gbox.umap <- umap(gbox_filtered)
+
+#Do the cell type clusters group together if we only look at G-box related genes?
+colours=rainbow(length(unique(clust)))
+plot(gbox.umap$layout[,1], gbox.umap$layout[,2], col=colours[clust[includeCells]], pch=20, main='UMAP Flower', xlab='UMAP Component 1', ylab='UMAP Component 2')
+```
+
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Edit the title of the plot from 'main' to your actual data set name.  Then, put the figure on your Google Slide Deck. 
+:::
+
+::: {#hello .greeting .message style="background-color: lightblue;"}
+Learn about the parameters in UMAP.  Change the parameters and see how it influences the visualisation.
+:::
+
+As an added bonus, you could try playing around withe the parameters and seeing if it improves the visualisation.
+
+Or you could try doing PCA before doing UMAP
+```{r}
+pca=prcomp(gbox_filtered, scale.=T, rank.=5)
+gbox.pca.umap <- umap(pca$x)
+
+colours=rainbow(length(unique(clust)))
+plot(gbox.pca.umap$layout[,1], gbox.pca.umap$layout[,2], col=colours[clust[includeCells]], pch=20, main='PCA UMAP Flower', xlab='UMAP Component 1', ylab='UMAP Component 2')
+```
+
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Edit the title of the plot from 'main' to your actual data set name.  Then, put the figure on your Google Slide Deck. 
+:::
+
+## Takeaways
+
+This homework's aim is to get you familiar with adapting scripts to your own data set, using the Github and Google Drive, and helping you understand how the data is structured in your data sets.
+
+Next week, we're going to see if there are significant differences between gene expression values of G-box transcription factors and genes near G-boxes between cell types at each developmental stage.
+
+::: {#hello .greeting .message style="background-color: lightblue;"}
+If you have extra time this week and want to dig deeper, these are the following topics you should try to learn about:
+
+- Why is there zero-inflation in scRNA-seq data?
+
+- What is PCA?  UMAP?  t-SNE?  What are the positives and negatives of each approach?  Can you find these methods being used in scRNA-seq methods?  What are the parameters associated with each of these methods and how do they change the output
+
+- You may want to change the colour scheme of the UMAPs to help you visualise whether there are cell type-specific patterns in your data.  (See the example in the TeamDaphne slide deck)
+
+- If you see clusters in one of your UMAPs, you should read about different clustering algorithms (K-means, hierarchical clustering)
+
+- If you see a 'trajectory' in your UMAP data, you might want to read about pseudotime inference.
+
+:::
+
