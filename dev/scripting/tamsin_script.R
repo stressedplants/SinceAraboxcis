@@ -105,22 +105,4 @@ plot(gbox.pca.umap$layout[,1],
      pch = 20, 
      main = 'PCA UMAP Seedlingd6', 
      xlab = 'UMAP Component 1', 
-     ylab = 'UMAP Component 2') 
-
-#Visualisation with t-SNE
-# - Loading tsne library 
-install.packages('tsne')
-library(tsne)
-# - Visualising gbox using tsne 
-gbox.tsne <- tsne(gbox_filtered)
-# - Setting colours 
-colours = rainbow(length(unique(clust))) 
-# - Making the plot 
-plot(gbox.tsne$layout[,1],
-     gbox.tsne$layout[,2],
-     col = colours[clust[includeCells]],
-     main = 't-SNE Seedlingd6', 
-     xlab = 'UMAP Component 1', 
      ylab = 'UMAP Component 2')
-
-
