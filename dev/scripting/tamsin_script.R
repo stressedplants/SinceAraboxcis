@@ -239,3 +239,7 @@ ginieOutput=convertToAdjacency(net, 0.05)
 dim(ginieOutput)
 # - Displaying the first 10 edges in the network
 ginieOutput[1:10,]
+
+# - Applying the network algorithm with 50 trees 
+net=GENIE3(as.matrix(gbox), regulators = tfSubs, nTrees=50)
+save(net, file='seedling6d_network_nTree_50.RData')
