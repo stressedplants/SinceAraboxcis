@@ -2,7 +2,7 @@
 library(Matrix)
 
 #if (!require("BiocManager", quietly = TRUE))
-install.packages("BiocManager")
+library("BiocManager")
 
 #alternative filename='dev/utilities/dataprocessingHelperFunctions.R'
 source('dev/utilities/dataprocessingHelperFunctions.R')
@@ -122,8 +122,7 @@ library(Rtsne)
 library(ggplot2)
 
 #Create matix and perform T-sne
-#Priya helped me with this.
-gbox_filtered <- as.matrix(gbox_filtered)
+#Priya helped me with this.gbox_filtered <- as.matrix(gbox_filtered)
 gbox_matrix <- as.matrix(gbox_filtered)
 
 #Specify parameters
@@ -135,3 +134,148 @@ tsne_result <- Rtsne(gbox_matrix, dims = 2, perplexity = 45)
 plot(tsne_result$Y, col=colours[clust[includeCells]], pch = 20, main = "t-SNE plot Rosette_21d")
 
 
+#Perform SeuratUMAP
+source('dev/utilities/SeuratUMAP.r')
+SeuratUMAP_function(gbox_filtered)
+
+#Find the average gene expression of each gene across each cluster
+clustAsNumbers=as.numeric(paste(clust))
+
+geneExpByCluster = apply(gbox, 1, function(i){
+  sapply(0:(length(unique(clust))-1), function(j){
+    ids=which(clustAsNumbers==j)
+    mean(i[ids])
+  })
+})
+
+colnames(geneExpByCluster)=rownames(gbox)
+
+dim(geneExpByCluster)
+
+#Answer: 18 2109
+
+#Load package
+library('pheatmap')
+
+#Perform heatmap
+pheatmap(geneExpByCluster, scale='column')
+
+#Read in table of what cell type each cluster is
+clustLabs=read.table('data/clusterLabels.txt', header=T, sep='\t')
+
+#Print out all uniques names they assign samples:
+unique(clustLabs[,'Organ'])
+
+#Indicate organ is Rosette
+organ='Rosette 21d'
+simpleNames=clustLabs[which(clustLabs[,'Organ']==organ), "Cell.type.suggested"]
+print(simpleNames)
+
+#assign rownames
+rownames(geneExpByCluster)=simpleNames
+
+#Perform heatmap again
+pheatmap(geneExpByCluster, scale='column', main="Rosette 21D")
+
+#Save file
+write.table(geneExpByCluster, 'data/Rosette21d_avgExpressionByCluster.txt')
+
+#Perform heatmap but this time the analysis looks at trasnciption factors
+tfs=unique(araboxcis[,1])
+tfSubs=tfs[which(tfs %in% rownames(gbox))]
+pheatmap(geneExpByCluster[,tfSubs], scale='column', main= "Rosette 21D")
+
+#Find correlation between every TF and every potential downstream target across different cell types.
+corMat=sapply(tfSubs, function(tf){
+  apply(geneExpByCluster, 2, function(gene){
+    cor(geneExpByCluster[,tf], gene, method='spearman')
+  })
+})
+
+dim(corMat)
+#Answer: 2109  145
+
+#Create heatmap
+pheatmap(corMat)
+
+#Calcualte correlation the TFs that are highly correlated with downstream genes
+id=which(corMat>0.8 & corMat!=1, arr.ind = TRUE)
+dim(id)
+#Answer= 1331 2
+
+#Check corMat and Id values
+dim(corMat)
+#Answer: 2109 2
+dim(id)
+#Answer: 1331 2
+ 
+#Perform Histogram
+tVal=apply(id, 1, function(i){
+  row=rownames(corMat)[i[1]]
+  col=colnames(corMat)[i[2]]
+  
+  inBoth=length(which(gbox[row,]>0 & gbox[col,]>0))
+  inNone=length(which(gbox[row,]==0 & gbox[col,]==0))
+  inFirst=length(which(gbox[row,]>0 & gbox[col,]==0))
+  inSecond=length(which(gbox[row,]==0 & gbox[col,]>0))
+  matTemp=matrix(c(inBoth, inFirst, inSecond, inNone), ncol=2)
+  c(inBoth, inFirst, inSecond, inNone, (inBoth*inNone)/(inFirst*inSecond))
+})
+
+hist(log(tVal[5,]), main='Rosette 21D', xlab='log odds ratio')
+
+
+
+#assemble lists of genes that have positive correlations on a cell type level AND a single cell level.
+thresh=exp(1)
+idDoublePositive=which(tVal[5,]>thresh)
+doublePositive=id[idDoublePositive,]
+doublePositive[,1]=rownames(corMat)[doublePositive[,1]]
+doublePositive[,2]=colnames(corMat)[as.numeric(doublePositive[,2])]
+doublePositive=cbind(doublePositive[,2], doublePositive[,1]) #so TF comes before target
+doublePositive=cbind(doublePositive, tVal[5,idDoublePositive])
+
+#save file
+write.table(doublePositive, file='data/Rosette21D_doublePositives.txt', sep='\t', row.names=F) ##CHANGE FILE NAME
+
+#Assemble a set of regulatory pairs that were positive in the first analysis and negative in the second analysis.
+thresh=1
+idSimpson=which(tVal[5,]<thresh)
+Simpson=id[idSimpson,]
+
+Simpson[,1]=rownames(corMat)[Simpson[,1]]
+Simpson[,2]=colnames(corMat)[as.numeric(Simpson[,2])]
+Simpson=cbind(Simpson[,2], Simpson[,1]) #so TF comes before target
+Simpson=cbind(Simpson, tVal[idSimpson])
+
+#save file
+write.table(Simpson, file='data/Rosette21D_SimpsonPairs.txt', sep='\t', row.names=F)
+
+#Load package
+library(GENIE3)
+
+# Start timing
+start_time <- Sys.time()
+
+# Code to perform genie3 
+net <- GENIE3(as.matrix(gbox), regulators = tfSubs, nTrees = 50) # Adjust nTrees as needed
+
+# Calculate elapsed time
+elapsed_time <- Sys.time() - start_time
+
+# Print elapsed time
+print(elapsed_time)
+#Anser: 10.32947 hours
+
+# Save the object
+save(net, file = 'Rosette21D_network_nTree_50.RData')
+
+#Convert the 50 trees into a table 
+ginieOutput=convertToAdjacency(net, 0.05)
+
+#Check dimension
+dim(ginieOutput)
+#Answer: 257   3
+
+#Table output
+ginieOutput[1:10,]
