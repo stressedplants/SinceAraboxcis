@@ -1,0 +1,980 @@
+Organ	Major Cluster	v2_annotation	Cell type suggested
+Flower	0	Unannotated	Unannotated
+Flower	1	Unannotated	Unannotated
+Flower	2	Epidermis (Petal and stamen) and trichomes / Mesophyll / Vascular	Epidermal
+Flower	3	Trichome	Trichome
+Flower	4	Phloem parenchyma and Procambium / Epidermis	Epidermal
+Flower	5	"Myrosin Idioblast, Petals / Guard cell (FAMA)"	Guard 
+Flower	6	Trichome	Trichome
+Flower	7	"Vascular, Phloem"	Vascular
+Flower	8	Phloem (GWD2) in tapetum	Phloem 
+Flower	9	Phloem companion cell and Procambium	Phloem 
+Flower	10	Epidermis	Epidermal
+Flower	11	Pollen cell type (unknown)	Pollen 
+Flower	12	Xylem	Xylem
+Rosette 21d	0	Unannotated	Unannotated
+Rosette 21d	1	Unannotated	Unannotated
+Rosette 21d	2	Guard?	Guard
+Rosette 21d	3	Unannotated	Unannotated
+Rosette 21d	4	Unannotated	Unannotated
+Rosette 21d	5	Vascular (Phloem and Xylem parenchyma)	Vascular
+Rosette 21d	6	"Adaxial epidermis (CHS), Mesophyll?, Trichome"	Adaxial epidermal 
+Rosette 21d	7	"Adaxial epidermis (CHS), Guard?, Mesophyll?, Trichome, Xylem"	Adaxial epidermal 
+Rosette 21d	8	Phloem (SUC2)	Phloem 
+Rosette 21d	9	Xylem (ACL5)	Xylem
+Rosette 21d	10	"Guard, dividing, Trichome"	Guard
+Rosette 21d	11	"Epidermis, Guard (FAMA), Mesophyll?, Trichome"	Guard
+Rosette 21d	12	Abaxial epidermis (AT4G21910)	Abaxial epidermal
+Rosette 21d	13	Unannotated	Unannotated
+Rosette 21d	14	"Epidermis (FDH), Dividing (MET1, CDC20.2, NACK1), Trichome"	Epidermal
+Rosette 21d	15	Guard (FAMA)	Guard
+Rosette 21d	16	"Dividing, Procambium"	Dividing
+Rosette 21d	17	Vascular (Phloem and Xylem parenchyma)	Vascular 
+Rosette 30d	0	Unannotated	Unannotated
+Rosette 30d	1	"Epidermis (ML1, CER5, AT5G54585-Procko et al., 2022)"	Unannotated
+Rosette 30d	2	"Unannotated (Based on TAIR I would suggest stress cell state or immune activated, I would suggest doing GO analysis but probably not enough markers for that.)"	Adaxial epidermal 
+Rosette 30d	3	"Vascular (MAM1, ACL5, SULTR2;2)"	Adaxial epidermal 
+Rosette 30d	4	"Adaxial epidermis (AXR3, AT1G18810-Procko et al., 2022, CER5, TCL2, ML1), mesophyll (CAB3)"	Vascular
+Rosette 30d	5	"Unannotated (LOX2, RD26, SEN1, AFL1 Based on TAIR I would suggest stress cell state, aging, or immune activated, I would suggest doing GO analysis but probably not enough markers for that.)"	Companion cells
+Rosette 30d	6	"Spongy mesophyll (CORI3-Procko et al., 2022)"	Unannotated
+Rosette 30d	7	"Phloem (SUC2, GWD2)"	Procambium_PP
+Rosette 30d	8	Vascular (NPF1.2)	Unannotated
+Rosette 30d	9	"Procambium (AT1G18210- Kim et al., 2021)"	Phloem
+Rosette 30d	10	"Dividing (MET1, HMGB6)"	Unannotated
+Rosette 30d	11	"Meristematic/Dividing (PDF1, POK1, POK2, CDC20.1) epidermis (ML1, CUT1, FDH, AT1G04040- Kim et al., 2021: Procko et al., 2022, AT1G09310- Kim et al., 2021 (known before Kim, used by Kim)), Vascular"	Trichome
+Rosette 30d	12	"Abaxial epidermis (CUT1, CER5, ML1, AT4G21910- Procko et al., 2022), Meristematic, Xylem (LOX6)"	Mesophyll
+Rosette 30d	13	"Dividing (POK1, POK2, CDC20.2, CDC20.1)"	Xylem 
+Rosette 30d	14	Guard (FAMA)	Epidermal
+Rosette 30d	15	"Trichome (TOUCH 3, CAPRICE and more)"	Dividing
+Rosette 30d	16	Trichome (TOUCH 3)	Guard
+Seed_0d	0	Unannotated	Unannotated
+Seed_0d	1	Atrichoblast	Atrichoblast
+Seed_0d	2	Guard (stomatal development)	Guard
+Seed_0d	3	"Epidermis (FDH, ML1), Protophloem (Root)"	Epidermal
+Seed_0d	4	"Chalazal seed coat (based on eFP browser), Xylem pole pericycle (Root)"	Root Xylem pole pericycle
+Seed_0d	5	"Meristem (SAM, RAM), Developing Vascular"	Meristem
+Seed_0d	6	Abaxial epidermis (AT4G21910)	Abaxial epidermal
+Seed_0d	7	"Guard (FAMA), Vascular "	Guard
+Seed_0d	8	Root Trichoblast	Root Trichoblast
+Seed_0d	9	Abaxial epidermis (AT4G21910)	Abaxial epidermal
+Seed_0d	10	Atrichoblast	Atrichoblast
+Seed_0d	11	"Epidermis (ML1, TCL2), Guard (FAMA), Meristem (RAM, SAM), Vascular"	Guard
+Seed_0d	12	Unannotated	Unannotated
+Seed_0d	13	"Epidermis (FDH, TCL2), Vascular"	Epidermal
+Seed_0d	14	"Guard (FAMA), Phloem Parenchyma and companion cell"	Guard
+Seed_0d	15	"Root Elongation, Xylem and Procambium"	Xylem
+Seed_0d	16	Procambium_PP	Procambium_PP
+Seed_0d	17	"Seed coat, Root Trichoblast, Bundle sheath (AT2G43150)"	Seed coat
+Seed_1.25d	0	Xylem Pole Pericycle	Root Xylem Pole Pericycle
+Seed_1.25d	1	"Embryo radicle (XTH19), Root cells in inner layers"	Root cells in inner layers
+Seed_1.25d	2	Root Meristem	Root Meristem
+Seed_1.25d	3	"Adaxial epidermis, seed coat (AT1G21310)"	Adaxial epidermal 
+Seed_1.25d	4	"Epidermis (FDH, ML1), Spongy mesophyll (AFO), SAM"	Spongy mesophyll
+Seed_1.25d	5	"Adaxial epidermis, seed coat (AT1G21310), Root Meristem"	seed coat 
+Seed_1.25d	6	Root Vascular	Root Vascular
+Seed_1.25d	7	"Abaxial epidermis, Atrichoblast, SAM"	Epidermal
+Seed_1.25d	8	Chalazal seed coat (based on eFP browser)	Chalazal seed coat
+Seed_1.25d	9	"Spongy mesophyll (AFO), SAM"	Spongy mesophyll
+Seed_1.25d	10	"Adaxial epidermis, Embryo radicle (XTH19), Trichome"	Embryo radicle
+Seed_1.25d	11	"Mesophyll, Root Meristem"	Root Meristem
+Seed_1.25d	12	Root Vascular	Root Vascular
+Seed_1.25d	13	"Dividing, SAM (PDF1, PDF2), Procambium_PP"	Dividing
+Seed_1.25d	14	Root Meristem	Root Meristem
+Seed_1.25d	15	"Palisade mesophyll (CYP90A1), Phloem (SUC2) (Root and Shoot)"	Palisade mesophyll
+Seed_1.25d	16	"Root Meristem, Phloem"	Root Meristem
+Seedlings_12d	0	"Unannotated (based on TAIR I would suggest immune activated, also some mRNA splicing related genes, I would suggest doing GO analysis but probably not enough markers for that.)"	Unannotated
+Seedlings_12d	1	"Mesophyll (CAB3, LHCB2.1)"	Unannotated
+Seedlings_12d	2	Trichome (AtmybL2)	Phloem
+Seedlings_12d	3	"Trichome (ANNEXIN1, KORRIGIAN 2, KATANIN 1, DEHYDRIN Xero 2 LTI30, O-acetylserine (thiol) lyase and more), Trichoblast"	Unannotated
+Seedlings_12d	4	"Epidermis (FDH, ML1, AT4G21910-Procko et al., 2022- Abaxial), Palisade mesophyll (CYP90A1), Xylem (LOX6), Root vascular"	"Trichoblast, Trichome"
+Seedlings_12d	5	"Trichome (TOUCH 3, TOUCH 4)"	Unannotated
+Seedlings_12d	6	"Trichome (KORRIGIAN 2, STICHEL, IRREGULAR TRICHOME BRANCH1 and more), Trichoblast"	Unannotated
+Seedlings_12d	7	"Mesophyll (CAB3, LHCB2.1)"	Unannotated
+Seedlings_12d	8	"Procambium_PP, Trichome dev (GL2)"	Guard
+Seedlings_12d	9	"Vascular (Cyclophilin ROC1), Dividing (POK1, POK2), Root meristematic cells"	Trichome
+Seedlings_12d	10	"Phloem (SUC2, MAM1), Mesophyll (CAB3, LHCB2.1), Root vascular"	Trichome
+Seedlings_12d	11	Guard (FAMA)	"Trichoblast, Trichome"
+Seedlings_12d	12	"Epidermis (FDH, ML1, CER5), Vascular, Trichome, SAM"	Phloem
+Seedlings_12d	13	Trichome	Mesophyll
+Seedlings_12d	14	"Bundle sheath (AT2G43150- Procko et al., 2022), Trichome, Root epidermis"	Guard
+Seedlings_12d	15	"Epidermis (AT5G28630, AT5G28630- Procko et al., 2022), Guard (MPK9), Xylem (LOX6), Vascular, Trichome"	Meristem (Root and Shoot)
+Seedlings_12d	16	"Bundle sheath (AT2G43150- Procko et al., 2022), Trichome"	Procambium_PP
+Seedlings_12d	17	"Bundle sheath (AT2G43150- Procko et al., 2022)"	Procambium_PP
+Seedlings_12d	18	"Adaxial epidermis (AXR3, CHS), Guard (MPK9), Vascular, Trichome dev, Root Atrichoblast"	Vascular 
+Seedlings_3d	0	Unannotated	Unannotated
+Seedlings_3d	1	Atrichoblast	Atrichoblast
+Seedlings_3d	2	Xylem (ACL5)	Xylem
+Seedlings_3d	3	"Epidermis, Mesophyll, Phloem (GWD2)"	Mesophyll
+Seedlings_3d	4	Xylem and Procambium	Procambium
+Seedlings_3d	5	"Trichoblast, Trichome"	"Trichoblast, Trichome"
+Seedlings_3d	6	Atrichoblast	Atrichoblast
+Seedlings_3d	7	"Root Vascular, Phloem companion cells"	Vascular
+Seedlings_3d	8	Unannotated	Unannotated
+Seedlings_3d	9	Phloem	Phloem
+Seedlings_3d	10	Dividing	Dividing
+Seedlings_3d	11	Unannotated	Unannotated
+Seedlings_3d	12	"Protoxylem, Shoot xylem"	"Protoxylem, Shoot xylem"
+Seedlings_3d	13	Root Phloem	Root Phloem
+Seedlings_3d	14	Endodermis	Endodermal
+Seedlings_3d	15	Root Vascular	Root Vascular
+Seedlings_3d	16	"Dividing, Meristem (Root and Shoot), Trichome development (GL2), Procambium_PP"	Trichome development
+Seedlings_3d	17	Trichoblast	Trichoblast
+Seedlings_6d	0	"Epidermis (FDH, CER5, ML1)"	Epidermal
+Seedlings_6d	1	Palisade Mesophyll (CYP90A1)	Palisade Mesophyll
+Seedlings_6d	2	Abaxial epidermis (AT4G21910)	Abaxial epidermal
+Seedlings_6d	3	"Epidermis, Mesophyll (CAB3)"	Mesophyll
+Seedlings_6d	4	Dividing	Dividing
+Seedlings_6d	5	Mesophyll	Mesophyll
+Seedlings_6d	6	Phloem (Shoot and root)	Phloem
+Seedlings_6d	7	"Phloem (MAM1, BCAT4)"	Phloem
+Seedlings_6d	8	"Adaxial epidermis (AXR3), Atrichoblast"	"Adaxial epidermal, Atrichoblast"
+Seedlings_6d	9	Trichome (AGL16)	Trichome
+Seedlings_6d	10	"Epidermis (root and shoot), Procambium_PP"	Epidermal
+Seedlings_6d	11	"Protoxylem (root), Xylem (XCP1, ACL5; shoot)"	Xylem
+Seedlings_6d	12	"Palisade Mesophyll (CYP90A1), Dividing (MET1, HMGB6)"	Palisade Mesophyll
+Seedlings_6d	13	Maturation_Atrichoblast	Atrichoblast
+Seedlings_6d	14	Abaxial epidermis (AT4G21910)	Abaxial epidermal
+Seedlings_6d	15	"Epidermis (root and shoot), Trichome"	Epidermal (root and shoot)
+Seedlings_6d	16	"Dividing Epidermis (FDH, CER5, ML1), SAM"	SAM
+Seedlings_6d	17	"Casparian strip, Endodermis"	"Casparian strip, Endodermis"
+Seedlings_6d	18	"Root Columella and Distal Columella, Distal Lateral Root Cap, meristem"	Root meristem
+Seedlings_6d	19	"Guard (FAMA, MPK9)"	Guard
+Silique	0	Younger silique identity (YUC3)	Younger silique identity
+Silique	1	"Replum, Phloem (SUC2)"	Phloem
+Silique	2	"Phloem, Xylem"	Vascular
+Silique	3	"Xylem parenchyma, Phloem"	Vascular
+Silique	4	"Dividing, Pedicel (basal), Epidermis, Xylem, Mature silique"	Dividing
+Silique	5	"Pedicel, Trichome, Xylem (XCP1)"	Xylem
+Silique	6	Embryo	Embryo
+Silique	7	Trichome development (GL2)	Trichome development
+Silique	8	"Endosperm (RGP3), Phloem"	Endosperm
+Silique	9	"Epidermis (FDH), Phloem parenchyma"	Epidermal
+Silique	10	"Epidermis (AT1G04040), Phloem (GWD2), Mature trichome"	Epidermal
+Silique	11	Xylem parenchyma	Xylem
+Silique	12	Vascular	Vascular
+Silique	13	"Epidermis, Bundle sheath, Dividing (MET1)"	Dividing
+Silique	14	"Tip, Dividing (MET1), Phloem (SUC2)"	Phloem
+Silique	15	Phloem	Phloem
+Silique	16	"Guard (FAMA, TGG1)"	Guard
+Silique	17	Endosperm (RGP3)	Endosperm
+Silique	18	"Tip, Phloem (SUC2)"	Phloem
+Silique	19	"Early development stage, Dividing (MET1)"	Dividing (MET1)
+Silique	20	"Early development stage, Phloem, Replum, septum, pedicel, valves"	Phloem
+Silique	21	"Pod of young silique, Phloem"	Phloem
+Silique	22	"Phloem parenchyma, Early development stage seed"	Phloem
+Silique	23	Early development stage seed	Early development stage seed
+Silique	24	"Pod of young silique, Phloem"	Phloem
+Silique	25	Mature silique	Mature silique
+Silique	26	Mature silique	Mature silique
+Stem	0	Unannotated	Unannotated
+Stem	1	Unannotated	Unannotated
+Stem	2	Unannotated	Unannotated
+Stem	3	Xylem (ACL5)	Xylem
+Stem	4	Trichome development (GL2)	Trichome development
+Stem	5	Guard (FAMA)	Guard
+Stem	6	"Epidermis (AT1G09310), Guard (FAMA), Trichome"	Guard
+Stem	7	Unannotated	Unannotated
+Stem	8	Xylem (XCP1)	Xylem
+Stem	9	Vascular	Vascular
+Stem	10	Epidermis (FDH)	Epidermal
+Stem	11	"Palisade mesophyll (IQD22), Dividing (MET1)"	Palisade mesophyll
+Stem	12	"Epidermis (FDH), Adaxial, Trichome development (GL2)"	Trichome development
+Stem	13	Procambium_PP	Procambium_PP
+Stem	14	Vascular (NAKR1)	Vascular
+Stem	15	Unannotated	Unannotated
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
