@@ -186,7 +186,7 @@ source('../utilities/SeuratUMAP.r')
 install.packages("Seurat")
 SeuratUMAP_function(gbox_filtered)
 
-#week 3---------------------------------------------------------------
+#Week 3---------------------------------------------------------------
 #finding out the average gene expression of each gene across each cluster
 
 #make clust not be factors bcos rn clust is assumed to be a factor
@@ -231,3 +231,107 @@ rownames(geneExpByCluster)=simpleNames
 pheatmap(geneExpByCluster, scale='column', main='Rosette 30d')
 
 write.table(geneExpByCluster, '../../data/Rosette30d_avgExpressionByCluster.txt')
+
+#---------------------------------------------------------------------
+#Looking at TFs that bind to perfect Gboxes - to see if these TFs are
+#in certain cell types
+
+#gets all unique TFs in araboxcis - TFs in 1st column of araboxcis
+tfs=unique(araboxcis[,1])
+
+#gets TFs in araboxcis that is also in gbox
+tfSubs=tfs[which(tfs %in% rownames(gbox))]
+
+pheatmap(geneExpByCluster[,tfSubs], scale='column', main='Rosette 30d')
+
+#---------------------------------------------------------------------
+#investigating correlation between expression in TFs + potential downstream targets
+
+#to find the correlation between every TF and each potential downstream target across
+#the different cell types
+
+#cor calculates coefficient via spearman method
+#takes each tf in tfSubs and calculates the correlation between the tf
+#and each gene in geneExpByCluster
+corMat=sapply(tfSubs, function(tf){
+  apply(geneExpByCluster, 2, function(gene){
+    cor(geneExpByCluster[,tf], gene, method='spearman')
+  })
+})
+
+dim(corMat) #2098 144
+
+pheatmap(corMat, main='Rosette 30d')
+
+#---------------------------------------------------------------------
+#Looking at correlation between TF expression + downstream target genes
+#in individual cells at cell type level
+
+#trying to find TFs that are highly correlated with downstream genes 
+# and also if these genes are highly correlated with one another at the
+#individual cell level
+
+#filters matrix for where value is >0.8 & is 1 exactly bcos that's 
+#just a self correlation - makes it TRUE
+id=which(corMat>0.8 & corMat!=1, arr.ind = TRUE)
+dim(id) #979 2
+
+dim(corMat)
+dim(id)
+
+tVal=apply(id, 1, function(i){
+  row=rownames(corMat)[i[1]]
+  col=colnames(corMat)[i[2]]
+  
+  inBoth=length(which(gbox[row,]>0 & gbox[col,]>0))
+  inNone=length(which(gbox[row,]==0 & gbox[col,]==0))
+  inFirst=length(which(gbox[row,]>0 & gbox[col,]==0))
+  inSecond=length(which(gbox[row,]==0 & gbox[col,]>0))
+  matTemp=matrix(c(inBoth, inFirst, inSecond, inNone), ncol=2)
+  c(inBoth, inFirst, inSecond, inNone, (inBoth*inNone)/(inFirst*inSecond))
+})
+
+hist(log(tVal[5,]), main='Rosette 30d', xlab='log odds ratio')
+
+#---------------------------------------------------------------------
+#Compare between datasets
+
+thresh=exp(1)
+idDoublePositive=which(tVal[5,]>thresh)
+doublePositive=id[idDoublePositive,]
+doublePositive[,1]=rownames(corMat)[doublePositive[,1]]
+doublePositive[,2]=colnames(corMat)[as.numeric(doublePositive[,2])]
+doublePositive=cbind(doublePositive[,2], doublePositive[,1])
+doublePositive=cbind(doublePositive, tVal[5,idDoublePositive])
+
+#save file
+write.table(doublePositive, file='../../data/Rosette30d_doublePositives.txt', sep='\t', row.names=F)
+
+thresh=1
+idSimpson=which(tVal[5,]<thresh)
+Simpson=id[idSimpson,]
+
+Simpson[,1]=rownames(corMat)[Simpson[,1]]
+Simpson[,2]=colnames(corMat)[as.numeric(Simpson[,2])]
+Simpson=cbind(Simpson[,2], Simpson[,1]) #so TF comes before target
+Simpson=cbind(Simpson, tVal[idSimpson])
+
+#save file
+write.table(Simpson, file='../../data/Rosette30d_SimpsonPairs.txt', sep='\t', row.names=F)
+
+#---------------------------------------------------------------------
+#Making a network from scratch
+
+library(GENIE3)
+
+net=GENIE3(as.matrix(gbox), regulators = tfSubs, nTrees=50)
+
+save(net, file='../../rosette30d_network_nTree_50.RData')#check tree number
+
+#convert file to a table
+
+ginieOutput=convertToAdjacency(net, 0.05)
+
+dim(ginieOutput)
+
+ginieOutput[1:10,]
