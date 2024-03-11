@@ -55,6 +55,49 @@ convertToAdjacency <- function(network, threshold){
   col3
 }
 
+
+
+#' Calculating pafway network
+#'
+#' @description This function finds associations between terms in the descriptions of nodes in a network
+#'
+#' @param GO a vector of descriptions of nodes in the network.  The vector needs names that match the nodes in the network, but can contain extra genes.
+#' @param edges the network, as a matrix or data frame.  Column 1 is Source nodes and Column 2 is the targets.
+#' @param GOtypes  a vector of terms that are of interest
+#' @return a matrix in which each value represents the p-value of the term corresponding to the COLUMN is upstream of the term corresponding to the ROW.
+#'
+#' 
+pafway <- function(GO, edges, GOtypes) {
+  
+  GOinNetwork = GO[unique(c(edges[, 1], edges[, 2]))]
+  
+  grepLen=sapply(GOtypes, function(i){
+    length(grep(i, GOinNetwork))
+  })
+  names(grepLen)=GOtypes
+  
+  sapply(GOtypes, function(i) {
+    if(grepLen[i]!=0){
+      #find edges first:
+      grepI=grep(i, GOinNetwork[edges[, 1]])
+      
+      sapply(GOtypes, function(j) {
+        if(grepLen[j]!=0){
+          
+          a=length(grep(j, GOinNetwork[edges[grepI, 2]]))
+          
+          p_bot = grepLen[i]/length(GOinNetwork) * grepLen[j]/length(GOinNetwork)
+          
+          b = stats::binom.test(a, length(edges[, 1]), p = p_bot, alternative = c("greater"))
+          b$p.value
+        }else{1}
+      })
+    }else{rep(1, length(GOtypes))}
+  })
+}
+
+
+
 #' Title
 #'
 #' @param i 
