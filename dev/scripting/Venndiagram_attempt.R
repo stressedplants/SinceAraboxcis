@@ -65,9 +65,7 @@ d06_d03_common_edges <- setdiff(d06_d03_common_edges, common_edges)
 length(d06_d03_common_edges)
 
 #finding the edges only in each dataset
-length(setdiff(edges_d12, common_edges)) #no need to minus the d12_d0x sets as they are 0
+length(setdiff(setdiff(setdiff(edges_d12, common_edges), d12_d03_common_edges),d12_d06_common_edges )) 
 
-length(setdiff(setdiff(edges_d06, common_edges), d06_d03_common_edges))#no need to minus the d12_d0x sets as they are 0
-
-length(setdiff(setdiff(edges_d03, common_edges), d06_d03_common_edges))#no need to minus the d12_d0x sets as they are 0
-       
+length(setdiff(setdiff(setdiff(edges_d06, common_edges), d06_d03_common_edges), d12_d06_common_edges))
+length(setdiff(setdiff(setdiff(edges_d03, common_edges), d06_d03_common_edges), d12_d03_common_edges))
