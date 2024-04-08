@@ -233,6 +233,7 @@ library(GENIE3)
 # - Applying the network algorithm with 5 trees 
 net=GENIE3(as.matrix(gbox), regulators = tfSubs, nTrees=5)
 save(net, file='seedling6d_network_nTree_5.RData')
+load('seedling6d_network_nTree_5.RData')
 # - Converting to table format 
 ginieOutput=convertToAdjacency(net, 0.05)
 # - Displaying dimensions 
@@ -243,3 +244,101 @@ ginieOutput[1:10,]
 # - Applying the network algorithm with 50 trees 
 net=GENIE3(as.matrix(gbox), regulators = tfSubs, nTrees=50)
 save(net, file='seedling6d_network_nTree_50.RData')
+load('seedling6d_network_nTree_50.RData')
+# - Converting to table format 
+ginieOutput=convertToAdjacency(net, 0.05)
+# - Displaying dimensions 
+dim(ginieOutput)
+# - Displaying the first 10 edges in the network
+ginieOutput[1:10,]
+
+
+#Week 5 tasks
+#--------------------------------------------------
+
+#Load the network 
+# - Loading in the 50 tree network
+a = load('seedling6d_network_nTree_50.RData')
+# - Accessing the network through GENIE3
+newNet = GENIE3::getLinkList(net)
+
+#Finding overlaps between single cell gene network and Araboxcis network
+# - Finding unique genes in the new network
+genesInNet = unique(c(newNet[,1], newNet[,2]))
+# - Filtering the AraBOXcis network to only contain genes that are in the new network
+araboxcisFiltered = araboxcis[which(araboxcis[,1] %in% genesInNet & araboxcis[,2] %in% genesInNet),]
+# - Extracting the top edges in your new network
+newNetTopEdges = newNet[1:length(araboxcisFiltered[,1]),]
+# - Reformatting edges to make comparable size to Araboxcis network
+edgesNew = paste(newNetTopEdges[,1], newNetTopEdges[,2], sep='_')
+edgesOld = paste(araboxcisFiltered[,1], araboxcisFiltered[,2], sep='_')
+
+#Venn Diagram:
+# - The overlap
+length(which(edgesNew %in% edgesOld))
+# - In new network only
+length(which(! (edgesNew %in% edgesOld)))
+# - In old network only
+length(which(! (edgesOld %in% edgesNew)))
+
+#Finding important genes in the network 
+# - Exploring which TFs have the most edges/degree
+tfsNew = table(newNetTopEdges[,1])
+tfsOld = table(araboxcisFiltered[,1])[names(tfsNew)]
+# - Plotting histogram of degrees
+hist(as.numeric(tfsNew), main='SinceAraBOXcis', xlab='degree of TFs', main='Seedling 6d, 50 trees')
+# - Exploring if the same TFs have high degrees in AraBOXcis and the new network:
+plot(as.numeric(tfsNew), as.numeric(tfsOld), xlab='degree in SinceAraBOXcis', ylab='degree in AraBOXcis', main='Seedling 6d, 50 trees')
+# - Displaying 20 TFs with highest degrees  
+sort(tfsNew, decreasing=TRUE)[1:20]
+
+#Calculating metrics of TF importance: node betweenness, centrality, hub
+# - Loading required libraries
+library(igraph)
+install.packages('network')
+library(network)
+library(pheatmap)
+# 1) Node betweenness
+# - Calculating node betweenness 
+simple_network <- graph_from_edgelist(as.matrix(newNetTopEdges[,c(1,2)]))
+node_betweenness_all <- betweenness(simple_network)
+node_betweenness=node_betweenness_all[which(node_betweenness_all>0)]
+sort(node_betweenness, decreasing=TRUE)[1:20]
+# - Plotting the node betweenness 
+plot(sort(node_betweenness), main='Node betweenness')
+# 2) Node centrality 
+# - Calculating node centrality 
+node_centrality_all <- alpha_centrality(simple_network)
+node_centrality=node_centrality_all[which(node_centrality_all>0)]
+sort(node_centrality, decreasing=TRUE)[1:20]
+# - Plotting node centrality 
+plot(sort(node_centrality), main='Node centrality')
+# 3) Node hub 
+# - Calculating node hub 
+node_hub_all <- hub_score(simple_network)$vector
+node_hub=node_hub_all[which(node_hub_all>0)]
+sort(node_hub, decreasing=TRUE)[1:20]
+# - Plotting node hub
+plot(sort(node_hub), main='Node hub')
+# - Plotting node betweenness against node centrality 
+plot(node_betweenness_all, node_centrality_all)
+# - Plotting node hub against node centrality 
+plot(node_hub_all, node_centrality_all)
+# - Plotting node hub against node betweenness 
+plot(node_hub_all, node_betweenness_all)
+
+#Associations between GO terms in the network 
+# - Loading data
+a = load('C:/Users/tammy/Downloads/functionalData.RData')
+source('C:/Users/tammy/OneDrive/Documents/GitHub/SinceAraboxcis/dev/utilities/dataprocessingHelperFunctions.R')
+# - Using PAFway to explore GO term associations 
+pafwayOut = pafway(GOconcat, newNetTopEdges, unique(goOfInterest))
+rownames(pafwayOut) = colnames(pafwayOut)
+# - Filter to only include rows and columns with at least one significant factor:
+atLeastOneSigRow=which(apply(pafwayOut, 1, function(i){length(which(i<0.05))})>0)
+atLeastOneSigCol=which(apply(pafwayOut, 2, function(i){length(which(i<0.05))})>0)
+pafwayInterestingOnly=pafwayOut[atLeastOneSigRow, atLeastOneSigCol]
+# - Creating heatmap of GO terms 
+pheatmap(pafwayInterestingOnly)
+# - Creating logged heatmap (most significant associations)
+pheatmap(log(pafwayInterestingOnly, 10))
