@@ -26,11 +26,10 @@ combined_genes <- union(union(genesInNet_d12, genesInNet_d06), genesInNet_d03)
 #filter araboxcis for these genes.
 araboxcisFiltered = araboxcis[which(araboxcis[,1] %in% combined_genes & araboxcis[,2] %in% combined_genes),]
 
-#Now resize the networks to match araboxcis. 
-
-d12_NetTopEdges = d12Net[1:length(araboxcisFiltered[,1]),]
-d06_NetTopEdges = d06Net[1:length(araboxcisFiltered[,1]),]
-d03_NetTopEdges = d03Net[1:length(araboxcisFiltered[,1]),]
+#Now resize the networks to match araboxcis. 5
+d12_NetTopEdges = d12Net[1:13895,]
+d06_NetTopEdges = d06Net[1:13895,]
+d03_NetTopEdges = d03Net[1:13895,]
 
 
 
@@ -114,3 +113,5 @@ commonNet_genes <- strsplit(common_edges_for_net , "_")
 regulatoryGene <- sapply(commonNet_genes, "[[", 1)
 targetGene <- sapply(commonNet_genes, "[[", 2)
 commonNet <- data.frame(regulatoryGene, targetGene)
+
+write.csv(commonNet, "data/commonNet.csv", row.names = FALSE)
