@@ -158,7 +158,7 @@ dim(geneExpByCluster)
 library('pheatmap')
 
 #Perform heatmap
-pheatmap(geneExpByCluster, scale='column')
+pheatmap(geneExpByCluster, scale='column', main= "Rosette 21D")
 
 #Read in table of what cell type each cluster is
 clustLabs=read.table('data/clusterLabels.txt', header=T, sep='\t')
@@ -196,7 +196,7 @@ dim(corMat)
 #Answer: 2109  145
 
 #Create heatmap
-pheatmap(corMat)
+pheatmap(corMat, main = "Rosette 21D")
 
 #Calcualte correlation the TFs that are highly correlated with downstream genes
 id=which(corMat>0.8 & corMat!=1, arr.ind = TRUE)
@@ -279,3 +279,145 @@ dim(ginieOutput)
 
 #Table output
 ginieOutput[1:10,]
+
+
+#Load the network
+a=load('Rosette21D_network_nTree_50.RData')
+newNet=GENIE3::getLinkList(net)
+araboxcis=read.csv('data/gboxNetwork22C.csv', header=T)
+
+#gets the set of unique genes in your new network
+genesInNet=unique(c(newNet[,1], newNet[,2]))
+
+#filter the AraBOXcis network to only contain genes that are in your new network
+araboxcisFiltered=araboxcis[which(araboxcis[,1] %in% genesInNet & araboxcis[,2] %in% genesInNet),]
+
+#extract the top edges in your new network, to make your network the same size as the araboxcisFiltered network.
+newNetTopEdges=newNet[1:length(araboxcisFiltered[,1]),]
+
+#reformat edges so it is more straightforward to compare them
+edgesNew=paste(newNetTopEdges[,1], newNetTopEdges[,2], sep='_')
+edgesOld=paste(araboxcisFiltered[,1], araboxcisFiltered[,2], sep='_')
+
+#Now, you can come up with all the different parts of a Venn Diagram:
+
+#The overlap
+length(which(edgesNew %in% edgesOld))
+
+#create vector
+common_elements <- edgesNew[edgesNew %in% edgesOld]
+
+# Create a data frame with common elements and additional columns
+common_elements_df <- data.frame(Common_Elements = common_elements,
+                                 Regulator = newNetTopEdges$regulator[match(common_elements, edgesNew)],
+                                 Target = newNetTopEdges$target[match(common_elements, edgesNew)],
+                                 Weight = newNetTopEdges$weight[match(common_elements, edgesNew)])
+
+#1000 significant from the common elements
+
+common_ele <- common_elements_df [1:1000,]
+
+#Seve table
+
+write.table(common_ele, file='Rosette21D1000com.csv', sep=',', row.names=FALSE, quote=FALSE)
+
+#answer:9492
+
+  #In new network only
+  length(which(! (edgesNew %in% edgesOld)))
+#Answer: 37867
+  
+  #In old network only
+  length(which(! (edgesOld %in% edgesNew)))
+#answer: 37867
+  
+  tfsNew=table(newNetTopEdges[,1])
+  tfsOld=table(araboxcisFiltered[,1])[names(tfsNew)]
+  
+  #histogram of degrees should look like an exponential distribution, because biological networks are a kind of network called 'scale-free', meaning that most TFs only regulate a small number of genes, but a few are influential hubs.
+  
+  hist(as.numeric(tfsNew), main='SinceAraBOXcis', xlab='degree of TFs')  
+  
+  #Let's see if the same TFs have high degrees in AraBOXcis and our new network:
+  plot(as.numeric(tfsNew), as.numeric(tfsOld), xlab='degree in SinceAraBOXcis', ylab='degree in AraBOXcis')
+  
+  #Let's print out the 20 TFs with highest degrees.  
+  sort(tfsNew, decreasing=TRUE)[1:20]
+  
+  #Load packages
+  
+  library(igraph)
+
+  library(network)  
+
+  library(pheatmap)
+  
+  #Create simple network
+  simple_network <- graph_from_edgelist(as.matrix(newNetTopEdges[,c(1,2)]))
+  
+  #Create node of betweeness
+  node_betweenness_all <- betweenness(simple_network)
+  node_betweenness=node_betweenness_all[which(node_betweenness_all>0)]
+  sort(node_betweenness, decreasing=TRUE)[1:20] 
+  
+  
+  #Plot values
+  plot(sort(node_betweenness))
+  
+  
+  #abline(h=5000)
+  
+  node_centrality_all <- alpha_centrality(simple_network)
+  node_centrality=node_centrality_all[which(node_centrality_all>10)]
+  sort(node_centrality, decreasing=TRUE)[1:20]
+  
+  #abline(h=5000)
+  
+  node_hub_all <- hub_score(simple_network)$vector
+  node_hub=node_hub_all[which(node_hub_all>0)]
+  sort(node_hub, decreasing=TRUE)[1:20]
+  
+  plot(sort(node_hub))
+  
+  #abline(h=0.6)
+  
+  plot(node_betweenness_all, node_centrality_all)
+  
+  plot(node_hub_all, node_betweenness_all)
+  
+  
+  
+  #load data
+  a=load('data/functionalData.RData')
+  source('dev/utilities/dataprocessingHelperFunctions.R')
+  
+  
+  pafwayOut=pafway(GOconcat, newNetTopEdges, unique(goOfInterest))
+  rownames(pafwayOut)=colnames(pafwayOut)
+  
+  #Filter to only include rows and columns with at least one significant factor:
+  atLeastOneSigRow=which(apply(pafwayOut, 1, function(i){length(which(i<0.05))})>0)
+  
+  
+  atLeastOneSigCol=which(apply(pafwayOut, 2, function(i){length(which(i<0.05))})>0)
+  
+  pafwayInterestingOnly=pafwayOut[atLeastOneSigRow, atLeastOneSigCol]
+  
+  #plot pheatmap
+  pheatmap(pafwayInterestingOnly)
+  
+  #Let's re-do zooming to the most significant associations by taking a log 
+  pheatmap(log(pafwayInterestingOnly, 10))
+  
+  
+  
+  #net100
+  myNet <- newNet[1:1000,]
+
+  #Save
+
+  write.table(myNet, file='Rosette21D.csv', sep=',', row.names=FALSE, quotes=FALSE)  
+  
+ 
+  
+  
