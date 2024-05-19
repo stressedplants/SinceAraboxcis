@@ -1,199 +1,204 @@
+#This section of code is used to generate a plot showing the number of cells in each cluster in the snRNA-seq data of 30-day-old rosettes of Arabidopsis
+
 library(Matrix)
 
-#function source will run all code from a different file
-source('../utilities/dataprocessingHelperFunctions.R')
+#Loads file which contains functions to help analyse the code
+source('dev/utilities/dataprocessingHelperFunctions.R')
 
 
-#loading with part i'm looking at
-a = load('../../data/GSE226097_rosette_30d_230221.RData')
+#Loads the snRNA-seq data of 30-day-old rosettes of Arabidopsis
+a = load('data/GSE226097_rosette_30d_230221.RData')
 
-#Load the original AraBOXcis network that was trained on bulk RNA-seq in seedlings
-#set the parameter header as true if you have column names
-araboxcis = read.csv('../../data/gboxNetwork22C.csv', header = T)
 
+#Loads the original AraBOXcis network based on the bulk RNA-seq data in 7-day-old seedlings
+araboxcis = read.csv('data/gboxNetwork22C.csv', header = T)
+
+
+#This will show the variables stored in the single cell data. This data has two variables gbox and clust
 print(a)
 
-#prints out 2 variables gbox + clust
-#gbox is a matrix: a data table with rows and columns
-#clust is a vector: single column of data
 
-#function dim tells u no. of rows + columns
+#Tells the number of rows (these are the G-box related genes) and the number of columns (these are the individual cells) in gbox. The output is 2098, 37817 so there are 2098 genes and 37817 cells.
 dim(gbox)
 
-#function length checks length of cluster
+
+#Shows the length of the variable cluster, 37817 which is the number of cells. Each cell in gbox has a cluster designation.
 length(clust)
 
-#the rownames of gbox are gene names
-#this dataset already been filtered to only have genes that are in the G-box network
-#so these genes are either G-box binding TFs or genes with perfect G-box sequence motifs in their promoters
 
-#looks at first 10 rownames in gbox
-rownames(gbox)[1:10]
-
-#the output of rownames is a vector
-#to access data in a vector, u can specify the id(number) or ids(vector) u want to access within square bracket
-# such as vec[id] or vec[ids]
-
-#the column names of gbox are the individual cells; they all have unique ids
-
-colnames(gbox)[1:10]
-
-#the values in the matrix gbox are gene expression values
-#there r many 0s bcos 
+#Converts gbox into a Matrix i.e. a normal table in R
 as.matrix(gbox[1:50, 1:3])
-#looks at first 50 rows, and first 3 columns
-#as.matrix turns a Matrix (with capital M) into a normal matrix, which is a normal table in R
-#to get submatrix of Matrix u do mat[rows, cols]
-#if u want certain rows + all columns  mat[rows, ]
-#if u want all rows + certain columns mat[,cols]
 
-#the variable clust contains cluster designation of each cell
-#the clusters were identified using Seurat package
 
-#prints cluster designations of first 8 cells
-clust[1:8]
-
-#function table counts number of cells in each cluster
+#Function table counts the number of cells in each cluster
 table(clust)
 
-#plot this as a graph
-plot(table(sort(clust)), xlab='cluster name', ylab='number of cells', main='Rosette 30 Days')
-
+#This plots the number of cells in each cluster
+plot(table(sort(clust)), xlab='Cluster Designation', ylab='No. of Cells', main='No. of cells in each cluster in gbox')
 #---------------------------------------------------------------------
-#looking at gboxNetwork22C.csv
-dim(araboxcis)
+#This section is used to calculate how many unique G-box binding TFs there are in gbox
 
-#looks at first 4 rows
+
+#Shows the dimensions of the bulk RNA-seq data used for the AraBOXcis network
+dim(araboxcis)
+#There are 5000 rows and 3 columns
+
+#Shows the first 4 rows of araboxcis
 araboxcis[1:4,]
 
 #column 1 is the TF
 #column 2 is the target gene
 #column 3 is the score of the regulatory edge
 
-#this networks includes all edges with score>0, but usually u would choose a threshold
-#normally 0.05 to decide if u want to include an edge or not in the network
 
-#makes a histogram of the scores, Scores is column 3 + u want all rows
+#Makes a histogram of the scores of the regulatory edges in araboxcis
 hist(araboxcis[,3])
 
-#gets a list of TFs
+
+#Stores a list of the unique TFs in araboxcis in tfs
 tfs=unique(araboxcis[,1])
-#unique function creates a new vector with all duplicates removed
 
-#to filter this to only include TFs that are also in the scRNA-seq data
-#some TFs are expressed so lowly that they aren't observed in scRNA-seq
 
+#tfSubs is filtered to only include the TFs that are present in both gbox and araboxcis
 tfSubs=tfs[which(tfs %in% rownames(gbox))]
 
-#find out how many TFs there are
+
+#Finds out how many TFs (144) there are in gbox.
 length(tfSubs)
 
 #---------------------------------------------------------------------
-#Filter Genes and cells with very low values
+#This section of code was used to filter the genes and cells in gbox with low values
 
-#gives rows + columns of gbox
-dim(gbox)
 
-#get rid of cells with less than 1% of the genes expressed at all
-
+#Sets the threshold to 1%
 thresh=0.01
 
-#calculates no. of genes for each cell in gbox
-#function counts no. of genes in each cell where count is bigger than 0
+
+#This function counts the no. of genes in each cell where the gene expression  bigger than 0
 numberGenesPerCell=apply(gbox, 2, function(i){length(which(i>0))})
 
-#will only include the cells which meet the threshold for the no. of genes per cell
-#so it multiplies the threshold by the total no. of gene (dim(gbox)[1])
-#dim(Gbox)[1] gives you the no. of rows which = no. of genes
+
+#This filters gbox to remove the cells that have less than 1% of the genes expressed at all
 includeCells=which(numberGenesPerCell>(thresh*dim(gbox)[1]))
 
-#makes new matrix called gbox_Filtered which filters cells in gbox where the
-#gene expression meets threshold
+
+#The filtered gbox is stored in gbox_filtered
 gbox_filtered=gbox[,includeCells]
 
+
+#Looks at the dimensions of g+box filtered. There are 2098 genes (rows) and 37816 (cells). This means that only 1 cell was removed.
 dim(gbox_filtered)
 
-#get rid of genes expressed in less than 1% of the cells
 
+#This filters gbox_filtered to remove the genes expressed in less than 1% of the cells
 numberCellsPerGene=apply(gbox_filtered, 1, function(i){length(which(i>0))})
 includeGenes=which(numberCellsPerGene>(thresh*dim(gbox_filtered)[2]))
 
+
 gbox_filtered=gbox_filtered[includeGenes,]
 
+
+#Shows dimensions of gbox_filtered. After filtering, there are 1520 genes (Rows) and 37816 cells (columns).
 dim(gbox_filtered)
-
-#Gbox filtered when thresh=0.01 = 1520 37816
-#Gbox filtered when thresh=0.05 = 784 13865 - a lot of points taken away but no clearer clusters
-
 #---------------------------------------------------------------------
-#Visualisation with UMAP
+#This section of code was used to generate the PCA before UMAP plot to visualise the snRNA-seq data
+#UMAP
 
-#high dimensionl data -> 2D data with UMAP
-
+#Load the required packages
 install.packages('umap')
 library(umap)
 
-#UMAP IS VERY SLOW - can take like 10m
-gbox.umap <- umap(gbox_filtered)
+#This code will retrive data from clusterLabels.txt which includes the cell type annotation for each cluster
+clustLabs=read.table('data/clusterLabels.txt', header=T, sep='\t')
+unique(clustLabs[,'Organ'])
+organ='Rosette 30d'
+simpleNames=clustLabs[which(clustLabs[,'Organ']==organ), "Cell.type.suggested"]
 
-#do the cell type clusters group together if we only look at G-box related genes?
-#pch=20 means filled circles; used to specify plotting symbol
-colours=rainbow(length(unique(clust)))
-plot(gbox.umap$layout[,1], gbox.umap$layout[,2], col=colours[clust[includeCells]], pch=20, main='UMAP Rosette 30d', xlab='UMAP Component 1', ylab='UMAP Component 2')
 
-#---------------------------------------------------------------------
-#PCA before UMAP
+#This shows all the cell type annotations for gbox
+print(simpleNames)
 
-pca=prcomp(gbox_filtered, scale.=T, rank.=5)
+
+#This will plot a PCA then UMAP plot
+pca <- prcomp(gbox_filtered, scale. = TRUE, rank. = 10)
 gbox.pca.umap <- umap(pca$x)
 
-colours=rainbow(length(unique(clust)))
-plot(gbox.pca.umap$layout[,1], gbox.pca.umap$layout[,2], col=colours[clust[includeCells]], pch=20, main='PCA UMAP Rosette 30 Days', xlab='UMAP Component 1', ylab='UMAP Component 2')
+colours <- c("hotpink", "blue", "green", "green4", "purple", "orange", "yellow", "cyan",
+             "magenta", "brown", "pink", "darkblue", "darkorchid4", "red",
+             "springgreen", "darkorange", "darkcyan")
 
+colour_mapping <- setNames(colours, simpleNames)
+
+plot(gbox.pca.umap$layout[,1], gbox.pca.umap$layout[,2], 
+     col = colour_mapping[clust[includeCells]], pch = 20, 
+     main = 'PCA UMAP Rosette 30 Days', 
+     xlab = 'UMAP Component 1', ylab = 'UMAP Component 2')
+
+# Key for the cluster designations in the plot
+# 0 hotpink = unannotated
+# 1 blue = unnannotated
+# 2 green = adaxial epidermal
+# 3 green4 = adaxial epidermal
+# 4 purple = vascular
+# 5 orange = companion cells
+# 6 yellow = unannotated
+# 7 cyan = Procambium_PP
+# 8 magenta = Unannotated
+# 9 brown = Phloem
+# 10 pink = Unannotated
+# 11 darkblue  Trichome
+# 12 darkorchid4 = Mesophyll
+# 13 red = Xylem
+# 14 springgreen = Epidermal
+# 15 darkorange = Dividing
+# 16 darkcyan = Guard
+
+
+#This code was used to generate PCA then UMAP plots to look at individual cell types
+colours <- c("grey83", "grey83", "grey83", "grey83", "grey83", "grey83", "grey83", "grey83",
+             "grey83", "grey83", "grey83", "grey83", "grey83", "grey83", "grey83", "grey83", "darkcyan")
+
+colour_mapping <- setNames(colours, simpleNames)
+
+plot(gbox.pca.umap$layout[,1], gbox.pca.umap$layout[,2], 
+     col = colour_mapping[clust[includeCells]], pch = 20, 
+     xlab = 'UMAP Component 1', ylab = 'UMAP Component 2')
 #---------------------------------------------------------------------
-#trying to. just colour one cluster
-cluster_of_interest <- 1
-
-#colours vectors is set to grey + the cluster of interest is coloured red
-#rep: repeat for all clusters
-
-colours <- rep('grey', length(unique(clust)))
-colours[cluster_of_interest] <- 'red'
-plot(gbox.pca.umap$layout[,1], gbox.pca.umap$layout[,2], col=colours[clust[includeCells]], pch=20, main='PCA UMAP Rosette 30 Days - Cluster 1 in red', xlab='UMAP Component 1', ylab='UMAP Component 2')
-
-#---------------------------------------------------------------------
-#trying to do t-SNE
-
-install.packages("Rtsne")
-library(Rtsne)
+#This section describes how the GRN was made for the snRNA-seq data of 30-day-old rosettes
 
 
-gbox_filtered <- as.matrix(gbox_filtered)
-
-tsne_result <- Rtsne(gbox_filtered)
-
-tsne_result <- Rtsne(gbox_filtered, perplexity = 50, theta = 0.5, dims = 2)
-
-#the Y are the matrix of t-SNE coordinates made by the Rtsne function
-colours=rainbow(length(unique(clust)))
-plot(tsne_result$Y, col=colours[clust[includeCells]], pch = 20, main = "t-SNE Plot")
+#Load required packages. GENIE3 is the network inference package we used.
+library(GENIE3)
 
 
-#---------------------------------------------------------------------
-#seurat
+#The parameters for the network were: The input is the gene expression dataset, gbox, the regulator is the list of G-box binding TFs, and the number of trees in the random forest was 50.
+net=GENIE3(as.matrix(gbox), regulators = tfSubs, nTrees=50)
 
-source('../utilities/SeuratUMAP.r')
-install.packages("Seurat")
-SeuratUMAP_function(gbox_filtered)
 
-#Week 3---------------------------------------------------------------
-#finding out the average gene expression of each gene across each cluster
+save(net, file='../../rosette30d_network_nTree_50.RData')
 
-#make clust not be factors bcos rn clust is assumed to be a factor
-#turns clust into a numeric vector + assigns it to new variable 'clustAsNumbers'
+
+#Converts R data file to a table. We used the convertToAdjacency function from dataprocessingHelperFunctions.R
+ginieOutput=convertToAdjacency(net, 0.05)
+
+
+dim(ginieOutput)
+
+
+ginieOutput[1:10,]
+#---------------------------------------------------------------
+#This section will find the average gene expression of each gene across the different cell types in gbox in a heatmap
+
+#Load required packages
+install.packages('pheatmap')
+library('pheatmap')
+
+
+#Converts clust (the cluster designation of each cell) into a numeric vector
 clustAsNumbers=as.numeric(paste(clust))
 
-#calculates mean expression of the gene within each cluster
+
+#Calculates the average expression of each gene within each cluster
 geneExpByCluster = apply(gbox, 1, function(i){
   sapply(0:(length(unique(clust))-1), function(j){
     ids=which(clustAsNumbers==j)
@@ -201,78 +206,61 @@ geneExpByCluster = apply(gbox, 1, function(i){
   })
 })
 
-#sets column names of the geneExpByCLuster to be the same as the row names
-#of the gbox matrix
+#Sets column names of the geneExpByCluster to be the same as the row names of gbox 
 colnames(geneExpByCluster)=rownames(gbox)
 
-#shows no. of rows + columns of the geneExpByCluster matrix
+#Shows the no. of rows (clusters = 17) + columns (genes =2098) of the geneExpByCluster matrix
 dim(geneExpByCluster)
-#17 2098
 
-#--------------------------------------------------------------------
 #Visualising large tables as heatmaps
 install.packages('pheatmap')
 library('pheatmap')
 
-#each value in the column in geneExpByCLuster wil be scaled 
-pheatmap(geneExpByCluster, scale='column')
 
-clustLabs=read.table('../../data/clusterLabels.txt', header=T, sep='\t')
-
-#gets all unique names + assigns samples
+#Retrieve the file which contains the cell type annotation for each cluster
+clustLabs=read.table('data/clusterLabels.txt', header=T, sep='\t')
 unique(clustLabs[,'Organ'])
-
 organ='Rosette 30d'
 simpleNames=clustLabs[which(clustLabs[,'Organ']==organ), "Cell.type.suggested"]
 print(simpleNames)
 
+#Assigns each cluster to a cell type
 rownames(geneExpByCluster)=simpleNames
 
-pheatmap(geneExpByCluster, scale='column', main='Rosette 30d')
 
-write.table(geneExpByCluster, '../../data/Rosette30d_avgExpressionByCluster.txt')
-
-#---------------------------------------------------------------------
-#Looking at TFs that bind to perfect Gboxes - to see if these TFs are
-#in certain cell types
-
-#gets all unique TFs in araboxcis - TFs in 1st column of araboxcis
+#Gets all the unique TFs in araboxcis
 tfs=unique(araboxcis[,1])
 
-#gets TFs in araboxcis that is also in gbox
+
+#Filters to only include the TFs that are present in both araboxcis and gbox
 tfSubs=tfs[which(tfs %in% rownames(gbox))]
 
+
+#Generates heatmap showing average gene expression of G-box binding TFs across the cell types
 pheatmap(geneExpByCluster[,tfSubs], scale='column', main='Rosette 30d')
 
 #---------------------------------------------------------------------
-#investigating correlation between expression in TFs + potential downstream targets
+#This section looks at the correlation between the expression of G-box binding TFs and the potential downstream targets
 
-#to find the correlation between every TF and each potential downstream target across
-#the different cell types
 
-#cor calculates coefficient via spearman method
-#takes each tf in tfSubs and calculates the correlation between the tf
-#and each gene in geneExpByCluster
+#Generates heatmap showing correlation between the expression of G-box binding TFs and the potential downstream targets using Spearman's correlation
 corMat=sapply(tfSubs, function(tf){
   apply(geneExpByCluster, 2, function(gene){
     cor(geneExpByCluster[,tf], gene, method='spearman')
   })
 })
 
+
 dim(corMat) #2098 144
+
 
 pheatmap(corMat, main='Rosette 30d')
 
 #---------------------------------------------------------------------
-#Looking at correlation between TF expression + downstream target genes
-#in individual cells at cell type level
+#This section of code looks at the correlation between TF expression + downstream target genes in individual cells
 
-#trying to find TFs that are highly correlated with downstream genes 
-# and also if these genes are highly correlated with one another at the
-#individual cell level
 
-#filters matrix for where value is >0.8 & is 1 exactly bcos that's 
-#just a self correlation - makes it TRUE
+#Filters the correlation matrix for where value is >0.8
 id=which(corMat>0.8 & corMat!=1, arr.ind = TRUE)
 dim(id) #979 2
 
@@ -291,11 +279,11 @@ tVal=apply(id, 1, function(i){
   c(inBoth, inFirst, inSecond, inNone, (inBoth*inNone)/(inFirst*inSecond))
 })
 
+#Generates histogram displaying the log odds ratio of observing the TF and the downstream gene within the same cell
 hist(log(tVal[5,]), main='Rosette 30d', xlab='log odds ratio')
 
 #---------------------------------------------------------------------
-#Compare between datasets
-
+#This section of code generates list of TF-target gene interactions that show correlation at both a cell type level and an individual level
 thresh=exp(1)
 idDoublePositive=which(tVal[5,]>thresh)
 doublePositive=id[idDoublePositive,]
@@ -304,34 +292,197 @@ doublePositive[,2]=colnames(corMat)[as.numeric(doublePositive[,2])]
 doublePositive=cbind(doublePositive[,2], doublePositive[,1])
 doublePositive=cbind(doublePositive, tVal[5,idDoublePositive])
 
-#save file
-write.table(doublePositive, file='../../data/Rosette30d_doublePositives.txt', sep='\t', row.names=F)
 
+#save file
+write.table(doublePositive, file='data/Rosette30d_doublePositives.txt', sep='\t', row.names=F)
+
+
+#This section of code generates list of TF-target gene interactions that show opposite correlation at a cell type level and an individual level; showing Simpson's Paradox
 thresh=1
 idSimpson=which(tVal[5,]<thresh)
 Simpson=id[idSimpson,]
 
+
 Simpson[,1]=rownames(corMat)[Simpson[,1]]
 Simpson[,2]=colnames(corMat)[as.numeric(Simpson[,2])]
-Simpson=cbind(Simpson[,2], Simpson[,1]) #so TF comes before target
+Simpson=cbind(Simpson[,2], Simpson[,1])
 Simpson=cbind(Simpson, tVal[idSimpson])
 
+
 #save file
-write.table(Simpson, file='../../data/Rosette30d_SimpsonPairs.txt', sep='\t', row.names=F)
+write.table(Simpson, file='data/Rosette30d_SimpsonPairs.txt', sep='\t', row.names=F)
 
 #---------------------------------------------------------------------
-#Making a network from scratch
+#This section of code was used to find the overlapping TF-target gene regulatory edges/interactions between the previous araboxcis network and the new gbox network. Also to see if the new network is scale-free.
 
-library(GENIE3)
+#Loads the networks
+a=load('rosette30d_network_nTree_50.RData')
+newNet=GENIE3::getLinkList(net)
+araboxcis=read.csv('data/gboxNetwork22C.csv', header=T)
 
-net=GENIE3(as.matrix(gbox), regulators = tfSubs, nTrees=50)
 
-save(net, file='../../rosette30d_network_nTree_50.RData')#check tree number
+genesInNet=unique(c(newNet[,1], newNet[,2]))
 
-#convert file to a table
 
-ginieOutput=convertToAdjacency(net, 0.05)
+araboxcisFiltered=araboxcis[which(araboxcis[,1] %in% genesInNet & araboxcis[,2] %in% genesInNet),]
 
-dim(ginieOutput)
 
-ginieOutput[1:10,]
+newNetTopEdges=newNet[1:length(araboxcisFiltered[,1]),]
+
+
+edgesNew=paste(newNetTopEdges[,1], newNetTopEdges[,2], sep='_')
+edgesOld=paste(araboxcisFiltered[,1], araboxcisFiltered[,2], sep='_')
+
+
+#Calculates the overlap: 9307
+length(which(edgesNew %in% edgesOld)) #overlap 9307
+
+
+#Calculates the edges unique to gbox = 37425
+length(which(! (edgesNew %in% edgesOld))) #new network only 37425
+
+
+#Calculates the edges unique to araboxcis = 37425
+length(which(! (edgesOld %in% edgesNew)))
+
+
+tfsNew=table(newNetTopEdges[,1])
+tfsOld=table(araboxcisFiltered[,1])[names(tfsNew)]
+
+
+#sPlots histogram to see if the new network is scale-free
+hist(as.numeric(tfsNew), main='SinceAraBOXcis', xlab='degree of TFs')
+
+plot(as.numeric(tfsNew), as.numeric(tfsOld), xlab='degree in SinceAraBOXcis', ylab='degree in AraBOXcis')
+
+
+#Prints out the top 20 edges in gbox
+sort(tfsNew, decreasing=TRUE)[1:20]
+
+#--------------------------------------------------------------------
+#This section was used to look at the metrics(hub_score and betweenness) of TF importance
+
+#Load required packages
+library(igraph)
+library(network)
+
+
+simple_network <- graph_from_edgelist(as.matrix(newNetTopEdges[,c(1,2)]))
+
+
+node_betweenness_all <- betweenness(simple_network)
+node_betweenness=node_betweenness_all[which(node_betweenness_all>0)]
+sort(node_betweenness, decreasing=TRUE)[1:20]
+
+
+plot(sort(node_betweenness))
+
+
+node_hub_all <- hub_score(simple_network)$vector
+node_hub=node_hub_all[which(node_hub_all>0)]
+sort(node_hub, decreasing=TRUE)[1:20]
+
+
+plot(sort(node_hub))
+
+
+plot(node_hub_all, node_betweenness_all)
+#---------------------------------------------------------------------
+#This section found associations between GO terms in the network
+
+library(pheatmap)
+a=load('data/functionalData.RData')
+source('dev/utilities/dataprocessingHelperFunctions.R')
+
+
+#The statistical tool pafway calculates the p-value of the association between GO terms
+pafwayOut=pafway(GOconcat, newNetTopEdges, unique(goOfInterest))
+rownames(pafwayOut)=colnames(pafwayOut)
+
+
+atLeastOneSigRow=which(apply(pafwayOut, 1, function(i){length(which(i<0.05))})>0)
+
+
+atLeastOneSigCol=which(apply(pafwayOut, 2, function(i){length(which(i<0.05))})>0)
+
+
+pafwayInterestingOnly=pafwayOut[atLeastOneSigRow, atLeastOneSigCol]
+
+#Generates heatmap of the GO terms in columns that act upstream of the Go terms in the rows. The values correspond to the log10 of the p-values.
+pheatmap(log(pafwayInterestingOnly, 10))
+
+#---------------------------------------------------------------------
+#This section calculates the top 1000 overlapping edges between araboxcis and gbox to be entered into cytoscape
+
+
+#The value should have 9307 elements, as there are 9307 overlapping edges between gbox and araboxcis
+overlap <- edgesNew[edgesNew %in% edgesOld]
+
+
+overlap_df <- data.frame(overlap = overlap,
+                         regulatoryGene = newNetTopEdges$regulator[match(overlap, edgesNew)],
+                         targetGene = newNetTopEdges$target[match(overlap, edgesNew)],
+                         weight = newNetTopEdges$weight[match(overlap, edgesNew)])
+
+
+write.table(overlap_df[1:1000, -1], file='overlaptop100030drosetteandaraboxcis.csv', sep=',', row.names=F)
+
+#---------------------------------------------------------------------
+#This section calculates the top 1000 overlapping edges between the 21d-old rosette and 30d-old rosette (gbox) to be entered into Cytoscape
+
+
+# Loads the 21d and 30d rosette datasets
+load('rosette30d_network_nTree_50.RData')
+net_30d <- GENIE3::getLinkList(net)
+
+
+load('Rosette21d_network_nTree_50.RData')
+net_21d <- GENIE3::getLinkList(net)
+
+
+#Finds the overlapping edges
+overlap21dand30d <- intersect(paste(net_30d[, 1], net_30d[, 2], sep = '_'),
+                              paste(net_21d[, 1], net_21d[, 2], sep = '_'))
+
+
+overlap_21dand30d <- data.frame(overlap = overlap21dand30d,
+                         regulator_30d = net_30d$regulator[match(overlap21dand30d, paste(net_30d[, 1], net_30d[, 2], sep = '_'))],
+                         target_30d = net_30d$target[match(overlap21dand30d, paste(net_30d[, 1], net_30d[, 2], sep = '_'))],
+                         weight_30d = net_30d$weight[match(overlap21dand30d, paste(net_30d[, 1], net_30d[, 2], sep = '_'))],
+                         regulator_21d = net_21d$regulator[match(overlap21dand30d, paste(net_21d[, 1], net_21d[, 2], sep = '_'))],
+                         target_21d = net_21d$target[match(overlap21dand30d, paste(net_21d[, 1], net_21d[, 2], sep = '_'))],
+                         weight_21d = net_21d$weight[match(overlap21dand30d, paste(net_21d[, 1], net_21d[, 2], sep = '_'))])
+
+
+
+write.csv(overlap_21dand30d[1:1000, c(2, 3, 4)], file='overlaptop1000of21dand30drosette.csv', row.names = FALSE)
+
+#---------------------------------------------------------------------
+#This section calculates the number of edges that overlap between the 21d and 30d rosettes
+
+
+genesInNet=unique(c(newNet[,1], newNet[,2]))
+
+
+#Filters the 21d rosette data to include the genes that are also in the 30d network
+net_21dFiltered=net_21d[which(net_21d[,1] %in% genesInNet & net_21d[,2] %in% genesInNet),]
+
+
+#Makes the 21d and 30d rosette networks the same size
+newNetTopEdges=newNet[1:length(net_21dFiltered[,1]),]
+
+
+edgesNew=paste(newNetTopEdges[,1], newNetTopEdges[,2], sep='_')
+edgesOld=paste(net_21dFiltered[,1], net_21dFiltered[,2], sep='_')
+
+
+#Calculates the overlapping edges = 296449
+length(which(edgesNew %in% edgesOld))
+
+
+#Calculates the number of edges In 30d rosette network only = #2707
+length(which(! (edgesNew %in% edgesOld)))
+
+
+#Calculates the number of edges In 21d rosette network only = #2707
+length(which(! (edgesOld %in% edgesNew)))
