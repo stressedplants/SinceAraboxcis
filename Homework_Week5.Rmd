@@ -27,7 +27,240 @@ Blue boxes highlight additional activities that you could do that might enhance 
 
 ## Aims for today
 
-- Is the old AraBOXcis predictive of single cell data?
+Explore the network that you developed last week:
+
+- What is the overlap between the new network and the old AraBOXcis network?
+
+- What genes play an important role within the network?
+
+- What are the associations between GO terms within the network?
+
+## Load the network
+
+```{r}
+a=load('flower_network_nTree_5.RData') ### Remember to actually load in your specific network and to use the network that has 1000 trees
+newNet=GENIE3::getLinkList(net)
+araboxcis=read.csv('data/gboxNetwork22C.csv', header=T)
+```
+
+## Find overlaps between the single cell gene network and the AraBOXcis network
+
+```{r}
+#gets the set of unique genes in your new network
+genesInNet=unique(c(newNet[,1], newNet[,2]))
+
+#filter the AraBOXcis network to only contain genes that are in your new network
+araboxcisFiltered=araboxcis[which(araboxcis[,1] %in% genesInNet & araboxcis[,2] %in% genesInNet),]
+
+#extract the top edges in your new network, to make your network the same size as the araboxcisFiltered network.
+newNetTopEdges=newNet[1:length(araboxcisFiltered[,1]),]
+
+#reformat edges so it is more straightforward to compare them
+edgesNew=paste(newNetTopEdges[,1], newNetTopEdges[,2], sep='_')
+edgesOld=paste(araboxcisFiltered[,1], araboxcisFiltered[,2], sep='_')
+
+#Now, you can come up with all the different parts of a Venn Diagram:
+
+#The overlap
+length(which(edgesNew %in% edgesOld))
+
+#In new network only
+length(which(! (edgesNew %in% edgesOld)))
+
+#In old network only
+length(which(! (edgesOld %in% edgesNew)))
+
+```
+
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Using circles in the Google Drive Slides, make a Venn Diagram that summarises this information.  Make sure that it is obvious which developmental stage this is refering too.
+:::
+
+::: {#hello .greeting .message style="background-color: lightblue;"}
+Can you use a similar strategy to make Venn Diagrams to compare the networks from other members of your Team?
+:::
+
+Let's take a moment to self-reflect.  When I see a Venn Diagram like this, this is the thought process that goes through my mind: The total number of possible edges is going to be (number of TFs) * (number of genes), which for flowers is about 282,472 edges.  Here, we selected the top 44796 edges, which represents the top 15.8% of edges.  Since it will be roughly the same for AraBOXcis, you would expect an overlap of around 0.158*0.158*282,472, which is around 7052.  We have more overlap than what we expect, but it isn't drastically more (about 17% higher).  However, I made this Workshop using the network built on 5 trees, so it may be higher.  Also, flowers are about as distinct from seedlings in terms of biology as you can get, so it would be strange if these networks were extremely overlapping.  
+
+
+## Find important genes in the network
+
+There are different ways of finding important genes in the network, such as identifying well-connected hubs (hub_score), finding influential/central genes (alpha centrality), and finding genes that bridge between different regions in the network (betweenness).  Here, we'll calculate all three, but first let's crudely look to see which transcription factors (TFs) have the most edges (called their 'degree') and compare degrees in the old AraBOXcis network and our new one.  
+
+```{r}
+tfsNew=table(newNetTopEdges[,1])
+tfsOld=table(araboxcisFiltered[,1])[names(tfsNew)]
+
+#histogram of degrees should look like an exponential distribution, because biological networks are a kind of network called 'scale-free', meaning that most TFs only regulate a small number of genes, but a few are influential hubs.
+
+hist(as.numeric(tfsNew))
+
+#Let's see if the same TFs have high degrees in AraBOXcis and our new network:
+plot(as.numeric(tfsNew), as.numeric(tfsOld))
+
+#Let's print out the 20 TFs with highest degrees.  
+sort(tfsNew, decreasing=TRUE)[1:20]
+```
+
+Whenever you find a small set of genes that seem interesting, you can look up their biological roles using arabidopsis.org.  There is a search bar at the top that let's you search the gene ID.  Are any of these genes relevant for the developmental stage you are investigating?  Particularly, take a close look at the eFP browser tool that is embedded on arabidopsis.org
+
+```{r pressure, echo=FALSE, fig.cap="Here is a picture of what I mean by the eFP browser tool.", out.width = '100%'}
+knitr::include_graphics("figures/AT5G08130_eFP.png")
+```
+
+Now, let's calculate all the different metrics of TF importance.  Make sure to look up the definitions of these three different metrics and then look up the individual names of genes that rank highly by these metrics on arabidopsis.org.  Here, I'm giving you a rough idea of what to do, but by this stage, I'd expect you to know how to rename x- and y-axis to be sensible.
+
+```{r}
+
+library(igraph)
+library(network)
+simple_network <- graph_from_edgelist(as.matrix(newNetTopEdges[,c(1,2)]))
+
+node_betweenness_all <- betweenness(simple_network)
+node_betweenness=node_betweenness_all[which(node_betweenness_all>0)]
+sort(node_betweenness, decreasing=TRUE)[1:20]
+plot(sort(node_betweenness))
+#abline(h=5000)
+
+node_centrality_all <- alpha_centrality(simple_network)
+node_centrality=node_centrality[which(node_centrality_all>0)]
+sort(node_centrality, decreasing=TRUE)[1:20]
+plot(sort(node_centrality))
+#abline(h=5000)
+
+node_hub_all <- hub_score(simple_network)$vector
+node_hub=node_hub_all[which(node_hub_all>0)]
+sort(node_hub, decreasing=TRUE)[1:20]
+plot(sort(node_hub))
+#abline(h=0.6)
+
+plot(node_betweenness_all, node_centrality_all)
+plot(node_hub_all, node_centrality_all)
+plot(node_hub_all, node_betweenness_all)
+
+
+
+```
+
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+You should put something from this section into the Google Drive, whether it is a spreadsheet of all of the important genes in the network, based on all these different criteria or some scatterplot or a paragraph describing the biological function of some key genes or a combination of these.  By this stage, I'm giving you independence to decide what you think is important.  You might want to discuss your choices with your teammates.
+:::
+
+
+## Find associations between GO terms in the network
+
+These big networks are sometimes difficult to interpret.  One way to make sense of it is to find out whether there are certain GO terms that occur upstream or downstream of other GO terms in the network.  To do this, we use the statistical tool PAFway that a masters student developed in my lab a few years ago.  I added code for this (faster than the published version) in dataprocessingHelperFunctions.R.  Please make sure you have fetched the latest copy of the SinceArabidopsis project from Github!
+
+```{r}
+
+a=load('data/functionalData.RData')
+source('dev/utilities/dataprocessingHelperFunctions.R')
+
+pafwayOut=pafway(GOconcat, newNetTopEdges, unique(goOfInterest))
+rownames(pafwayOut)=colnames(pafwayOut)
+
+#Filter to only include rows and columns with at least one significant factor:
+atLeastOneSigRow=which(apply(pafwayOut, 1, function(i){length(which(i<0.05))})>0)
+
+
+atLeastOneSigCol=which(apply(pafwayOut, 2, function(i){length(which(i<0.05))})>0)
+
+pafwayInterestingOnly=pafwayOut[atLeastOneSigRow, atLeastOneSigCol]
+
+#Here, the terms associated with the columns are upstream of the terms associated with the rows.  The values correspond to p-values, so smaller is more significant.
+pheatmap(pafwayInterestingOnly)
+
+#Let's re-do zooming to the most significant associations by taking a log
+pheatmap(log(pafwayInterestingOnly, 10))
+```
+
+::: {#hello .greeting .message style="background-color: lightyellow;"}
+Put these heatmaps on your slide deck.  Do these make any biological sense?  Are they consistent across your team?
+:::
+
+
+```{r}
+a=load('flower_network_nTree_5.RData')
+newNet=GENIE3::getLinkList(net)
+araboxcis=read.csv('data/gboxNetwork22C.csv', header=T)
+
+genesInNet=unique(c(newNet[,1], newNet[,2]))
+araboxcisFiltered=araboxcis[which(araboxcis[,1] %in% genesInNet & araboxcis[,2] %in% genesInNet),]
+
+newNetTopEdges=newNet[1:length(araboxcisFiltered[,1]),]
+
+edgesNew=paste(newNetTopEdges[,1], newNetTopEdges[,2], sep='_')
+edgesOld=paste(araboxcisFiltered[,1], araboxcisFiltered[,2], sep='_')
+
+length(edgesNew[which(edgesNew %in% edgesOld)])
+
+
+inBoth=edgesNew[which(edgesNew %in% edgesOld)]
+inNewOnly=edgesNew[which(! (edgesNew %in% edgesOld))]
+inOldOnly=edgesOld[which(! (edgesOld %in% edgesNew))]
+
+
+tfsNew=table(newNetTopEdges[,1])
+tfsOld=table(araboxcisFiltered[,1])[names(tfsNew)]
+
+plot(as.numeric(tfsNew), as.numeric(tfsOld))
+
+sort(tfsNew)
+
+library(igraph)
+library(network)
+simple_network <- graph_from_edgelist(as.matrix(newNetTopEdges[,c(1,2)]))
+
+node_betweenness_all <- betweenness(simple_network)
+node_betweenness=node_betweenness_all[which(node_betweenness_all>0)]
+sort(node_betweenness)
+plot(sort(node_betweenness))
+abline(h=5000)
+
+node_centrality_all <- alpha_centrality(simple_network)
+node_centrality=node_centrality[which(node_centrality_all>0)]
+sort(node_centrality)
+plot(sort(node_centrality))
+abline(h=5000)
+
+node_hub_all <- hub_score(simple_network)$vector
+node_hub=node_hub_all[which(node_hub_all>0)]
+sort(node_hub)
+plot(sort(node_hub))
+abline(h=0.6)
+
+plot(node_betweenness_all, node_centrality_all)
+plot(node_hub_all, node_centrality_all)
+plot(node_hub_all, node_betweenness_all)
+
+```
+
+
+
+```{r}
+
+#compare to DAP-seq network
+
+```
+
+
+
+```{r}
+
+a=load('data/functionalData.RData')
+source('dev/utilities/dataprocessingHelperFunctions.R')
+
+pafwayOut=pafway(GOconcat, newNetTopEdges, unique(goOfInterest))
+rownames(pafwayOut)=colnames(pafwayOut)
+atLeastOneSigRow=which(apply(pafwayOut, 1, function(i){length(which(i<0.05))})>0)
+
+
+atLeastOneSigCol=which(apply(pafwayOut, 2, function(i){length(which(i<0.05))})>0)
+
+pafwayInterestingOnly=pafwayOut[atLeastOneSigRow, atLeastOneSigCol]
+pheatmap(pafwayInterestingOnly)
+pheatmap(log(pafwayInterestingOnly, 10))
+```
 
 ## Load old AraBOXcis
 If you're making a new script for this, you'll need the following:
@@ -50,6 +283,112 @@ And you'll need to reload your data
 ```{r}
 a=load('data/GSE226097_flower_230221.RData')
 araboxcis=read.csv('data/gboxNetwork22C.csv', header=T)
+```
+
+## For every regulatory pair, maybe calculate the odds ratio?
+
+```{r}
+araboxcisFiltered=araboxcis[which(araboxcis[,1] %in% rownames(gbox) & araboxcis[,2] %in% rownames(gbox)),]
+
+
+cooccurance=apply(araboxcisFiltered, 1, function(i){
+  cellsWithBoth=length(which(gbox[i[1],]>0 & gbox[i[2],]>0))
+  cellsWithNeither=length(which(gbox[i[1],]==0 & gbox[i[2],]==0))
+  cellsWithTFonly=length(which(gbox[i[1],]>0 & gbox[i[2],]==0))
+  cellsWithTargetOnly=length(which(gbox[i[1],]==0 & gbox[i[2],]>0))
+  
+  c(cellsWithBoth, cellsWithNeither, cellsWithTFonly, cellsWithTargetOnly)
+  
+})
+
+
+plot(cooccurance[1,])
+totalTF=cooccurance[1,]+cooccurance[3,]
+totalTarget=cooccurance[1,]+cooccurance[4,]
+expected=(totalTF*totalTarget)/colSums(cooccurance) 
+
+hist(log(expected, 10))
+highExpected=which(expected>10)
+plot(log(cooccurance[1,]/expected, 10))
+plot(log(cooccurance[1,highExpected]/expected[highExpected], 10))
+plot(cooccurance[2,])
+plot(log(cooccurance[1,highExpected]/expected[highExpected], 10), pch=19, col=rgb(0.1,0.1,0.1,0.01))
+
+cor(araboxcisFiltered[highExpected,3], log(cooccurance[1,highExpected]/expected[highExpected]))
+
+hist(log(cooccurance[1,highExpected]/expected[highExpected], 10))
+logActualOverExpected=log(cooccurance[1,highExpected]/expected[highExpected], 10)
+```
+
+
+```{r}
+
+#random network
+cooccuranceRandom=apply(araboxcisFiltered, 1, function(i){
+  
+  randomDownstream=sample(araboxcisFiltered[which(araboxcisFiltered[,2]!=i[1]),2], 1)
+  
+  cellsWithBoth=length(which(gbox[i[1],]>0 & gbox[randomDownstream,]>0))
+  cellsWithNeither=length(which(gbox[i[1],]==0 & gbox[randomDownstream,]==0))
+  cellsWithTFonly=length(which(gbox[i[1],]>0 & gbox[randomDownstream,]==0))
+  cellsWithTargetOnly=length(which(gbox[i[1],]==0 & gbox[randomDownstream,]>0))
+  
+  c(cellsWithBoth, cellsWithNeither, cellsWithTFonly, cellsWithTargetOnly)
+  
+})
+
+plot(cooccuranceRandom[1,])
+totalTF=cooccuranceRandom[1,]+cooccuranceRandom[3,]
+totalTarget=cooccuranceRandom[1,]+cooccuranceRandom[4,]
+expectedRandom=(totalTF*totalTarget)/colSums(cooccuranceRandom) 
+
+hist(log(expectedRandom, 10))
+highExpectedRandom=which(expectedRandom>10)
+plot(log(cooccuranceRandom[1,]/expectedRandom, 10))
+plot(log(cooccuranceRandom[1,highExpectedRandom]/expectedRandom[highExpectedRandom], 10))
+plot(cooccuranceRandom[2,])
+plot(log(cooccuranceRandom[1,highExpectedRandom]/expectedRandom[highExpectedRandom], 10), pch=19, col=rgb(0.1,0.1,0.1,0.01))
+
+hist(log(cooccuranceRandom[1,highExpectedRandom]/expectedRandom[highExpectedRandom], 10))
+
+background=log(cooccuranceRandom[1,highExpectedRandom]/expectedRandom[highExpectedRandom], 10)
+
+qqplot(logActualOverExpected, background)
+
+```
+
+## How about looking at correlations across tissue types?
+redo from last week:
+```{r}
+  #make clust not be factors
+  clustAsNumbers=as.numeric(paste(clust))
+
+geneExpByCluster = apply(gbox, 1, function(i){
+  sapply(0:(length(unique(clust))-1), function(j){
+    ids=which(clustAsNumbers==j)
+    mean(i[ids])
+  })
+})
+
+colnames(geneExpByCluster)=rownames(gbox)
+
+dim(geneExpByCluster)
+```
+
+
+Now, for the network, look at the correlation between gene expression by cluster for edges in the network
+
+```{r}
+
+corByCluster=apply(araboxcisFiltered, 1, function(i){
+  expTFbyCluster=geneExpByCluster[,i[1]]
+  expTargetbyCluster=geneExpByCluster[,i[2]]
+  
+  c(cor(expTFbyCluster, expTargetbyCluster, method='spearman'), cor.test(expTFbyCluster, expTargetbyCluster, method='spearman')$p.value)
+  
+})
+
+
 ```
 
 ## Predict expressions, using random forest

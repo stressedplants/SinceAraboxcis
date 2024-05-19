@@ -317,9 +317,9 @@ I would FIRST run this code with only 5 trees, to see if it works.  Then, I woul
 
 ```{r}
 
-net=GENIE3(as.matrix(gbox), regulators = tfSubs, nTrees=5) #use more than 5 trees
+net=GENIE3(as.matrix(gbox), regulators = tfSubs, nTrees=1000) #use more than 5 trees
 
-save(net, file='flower_network_nTree_5.RData')
+save(net, file='flower_network_nTree_1000.RData')
 
 ```
 ::: {#hello .greeting .message style="background-color: lightyellow;"}
